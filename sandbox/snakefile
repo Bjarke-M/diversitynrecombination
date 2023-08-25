@@ -1,0 +1,17 @@
+# Snakefile
+
+# Define variables
+gVCF = "/home/bjarkemp/primatediversity/data/gVCF_jointCalling_17_05_2021/Daubentonia_madagascariensis/Daubentonia_madagascariensisConcatGtVar.g.vcf.gz"
+Chainfile = "/home/bjarkemp/primatediversity/data/chain_files_15_03_2022/Daubentonia_madagascariensis_To_hg38.liftOver.bed"
+lifted = "/home/bjarkemp/primatediversity/People/bjarkemp/diversitynrecombination/sandbox/Lifted/Daubentonia_madagascariensis.bed"
+
+# Rule for lifting over gVCF file to hg38
+rule liftOver:
+    input:
+        gvcf_files = gVCF,
+        chain = chainfile
+    output:
+        lifted_file = lifted
+    shell:
+        "Crossmap.py vcf {input.chain} {input.gvcf_files} > {output.lifted_file}"
+
