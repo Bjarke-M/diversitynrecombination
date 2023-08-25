@@ -6,7 +6,7 @@ Data/ ->
 reference genome specific folders/: containing individual folders of the individuals/species that where mapped to this reference genome. ->
     species_specific_folders/: containing a folder for each individual ->
         individual folders/: a folder for the lifted files and one for the wb diversity files ->
-            Lifed folder -> the lifted 
+            Lifted folder -> the lifted 
             Wb-div folder -> eventually the window-based genetic diversity files
 
 
