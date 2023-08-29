@@ -1,0 +1,30 @@
+# Import the os module for working with file paths and directories
+import os
+
+# Define the path where the species folders are located
+species_path = "primatediversity/data/gVCF_jointCalling_17_05_2021"
+
+# Get a list of species folders within the specified path
+species_folders = [species for species in os.listdir(species_path) if os.path.isdir(os.path.join(species_path, species))]
+
+# Rule for generating all targets based on species folders
+rule all:
+    input:
+        expand("primatediversity/people/bjarkemp/data/liftover/{species}/{species}_lifted.vcf", species=species_folders)
+
+# Rule for performing liftover for each species
+rule liftover:
+    input:
+        chain_file="primatediversity/data/chain_files_15_03_2022/{species}_To_hg38.liftOver.gz",
+        input_vcf=os.path.join(species_path, "{species}/{species}ConcatGtVar.g.vcf.gz"),
+        reference_fasta="primatediversity/data/chain_files_15_03_2022/hg38/hg38.fasta"
+    output:
+        "primatediversity/people/bjarkemp/data/liftover/{species}/{species}_lifted.vcf"
+    shell:
+        """
+        # Activate the conda environment
+        conda activate diversitynrecombination
+        
+        # Run CrossMap.py to perform liftover
+        CrossMap.py vcf --chromid l --no-comp-alleles {input.chain_file} {input.input_vcf} {input.reference_fasta} {output}
+        """
