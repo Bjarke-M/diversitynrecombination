@@ -1,17 +1,16 @@
 # Import the os module for working with file paths and directories
 import os
 
-# Get a list of species names from the DataFrame
-# species_names = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops',
-#                  'Rhinopithecus_roxellana','Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
-#                  'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
-#                  'Pongo_abelii','Cercocebus_atys','Galago_moholi','Nomascus_leucogenys','Colobus_guereza',
-#                  'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
-#                  'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
+# Import the snakemake module for working with snakemake files
+species_names = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops',
+                 'Rhinopithecus_roxellana','Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
+                 'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
+                 'Pongo_abelii','Cercocebus_atys','Galago_moholi','Nomascus_leucogenys','Colobus_guereza',
+                 'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
+                 'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
 #Missing g.vcf.gz species: Theropithecus_gelada
 #Missing chainfiles: Carlito_syrichta Propithecus_coquereli'
 
-species_names = ['Daubentonia_madagascariensis']
 
 # Define the path where the species folders are located
 species_path = "/home/bjarkemp/primatediversity/data/gVCF_jointCalling_17_05_2021"
@@ -21,10 +20,12 @@ species_path = "/home/bjarkemp/primatediversity/data/gVCF_jointCalling_17_05_202
 # Rule for specifying all output VCF files
 rule all:
     input:
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/{species}_lifted.vcf", species=species_names),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/{species}_lifted.vcf.unmap", species=species_names),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/{species}_lifted.bcf.gz", species=species_names),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/{species}_lifted.bcf.unmap.gz", species=species_names)
+        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/vcfs/{species}_lifted.vcf", species=species_names),
+        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/vcfs/{species}_lifted.vcf.unmap", species=species_names),
+        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted.bcf.gz", species=species_names),
+        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted_unmap.bcf.gz", species=species_names),
+        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/csis/{species}_lifted.bcf.gz.csi", species=species_names),
+        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/csis/{species}_lifted_unmap.bcf.gz.csi", species=species_names)
 
 
 
@@ -35,8 +36,8 @@ rule liftover_generate_vcf:
         input_vcf=os.path.join(species_path, "{species}/{species}ConcatGtVar.g.vcf.gz"),
         reference_fasta="/home/bjarkemp/primatediversity/data/chain_files_15_03_2022/hg38/hg38.fasta"
     output:
-        vcf="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/{species}_lifted.vcf",
-        unmapvcf="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/{species}_lifted.vcf.unmap",
+        vcf="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/vcfs/{species}_lifted.vcf",
+        unmapvcf="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/vcfs/{species}_lifted.vcf.unmap",
     log: "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/logs/{species}/{species}_lifted.log"
     benchmark: "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/logs/{species}/{species}_lifted.benchmark"
     shell:
@@ -45,18 +46,28 @@ rule liftover_generate_vcf:
         CrossMap.py vcf --chromid l --no-comp-alleles {input.chain_file} {input.input_vcf} {input.reference_fasta} {output.vcf} 2> {log}
         """
 
-rule gzip_index_vcfs:
+rule gzip_vcfs_sort:
     input:
-        vcf="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/{species}_lifted.vcf",
-        unmapvcf="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/{species}_lifted.vcf.unmap"
+        vcf="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/vcfs/{species}_lifted.vcf",
+        unmapvcf="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/vcfs/{species}_lifted.vcf.unmap"
     output:
-        bcfgz="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/{species}_lifted.bcf.gz",
-        unmapgz="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/{species}_lifted.bcf.unmap.gz",
-    log: "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/logs/{species}/{species}_index.log"
-    benchmark: "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/logs/{species}/{species}_index.benchmark"
+        bcfgz="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted.bcf.gz",
+        unmapgz="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted_unmap.bcf.gz",
     shell:
         """
-        bcftools sort -o {output.bcfgz} {input.vcf} -O b --write-index
-        bcftools sort -o {output.unmapgz} {input.unmapvcf} -O b --write-index
+        bcftools sort -o {output.bcfgz} {input.vcf} -O b 
+        bcftools sort -o {output.unmapgz} {input.unmapvcf} -O b 
         """
 
+rule index:
+    input:
+        bcfgz="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted.bcf.gz",
+        unmapgz="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted_unmap.bcf.gz"
+    output:
+        bcfgz="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/csis/{species}_lifted.bcf.gz.csi",
+        unmapgz="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/csis/{species}_lifted_unmap.bcf.gz.csi"
+    shell:
+        """
+        bcftools index {input.bcfgz} -o {output.bcfgz}
+        bcftools index {input.unmapgz} -o {output.unmapgz}
+        """
