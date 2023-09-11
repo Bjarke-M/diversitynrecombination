@@ -5,4 +5,3 @@ __default__:
     memory: 15g
     ntasks-per-node: 8
 
-#snakemake --cluster "sbatch -A primatediversity -t 10:00:00 -N 8 --mem 16" —j 2
