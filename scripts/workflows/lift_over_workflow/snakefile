@@ -25,7 +25,9 @@ rule all:
         expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted.bcf.gz", species=species_names),
         expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted_unmap.bcf.gz", species=species_names),
         expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/csis/{species}_lifted.bcf.gz.csi", species=species_names),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/csis/{species}_lifted_unmap.bcf.gz.csi", species=species_names)
+        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/csis/{species}_lifted_unmap.bcf.gz.csi", species=species_names),
+        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted.bcf.gz.csi", species=species_names),
+        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted_unmap.bcf.gz.csi", species=species_names)
 
 
 
@@ -64,8 +66,8 @@ rule index:
         bcfgz="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted.bcf.gz",
         unmapgz="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted_unmap.bcf.gz"
     output:
-        bcfgz="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/csis/{species}_lifted.bcf.gz.csi",
-        unmapgz="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/csis/{species}_lifted_unmap.bcf.gz.csi"
+        bcfgz="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted.bcf.gz.csi",
+        unmapgz="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted_unmap.bcf.gz.csi"
     shell:
         """
         bcftools index {input.bcfgz} -o {output.bcfgz}
