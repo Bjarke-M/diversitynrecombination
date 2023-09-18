@@ -1,0 +1,68 @@
+#workflow for filtering / masking varients called in the primate diversity project
+# the workflow outputs a bed file for each sample with the positions that are believed to be real variants 
+
+# #species = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops',
+#                  'Rhinopithecus_roxellana','Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
+#                  'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
+#                  'Pongo_abelii','Cercocebus_atys','Galago_moholi','Nomascus_leucogenys','Colobus_guereza',
+#                  'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
+#                  'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
+# Define the list of species you want to process
+species = ['Daubentonia_madagascariensis']
+
+# The 'all' rule is the top-level rule that specifies all the final output files. /home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/Daubentonia_madagascariensis/bcfs/Daubentonia_madagascariensis_lifted.bcf.gz
+rule all:
+    input:
+        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}.txt", species=species)
+
+
+# Rule to generate a list of samples from the input BCF file
+rule generate_sample_files:
+    input:
+        bcfgz="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted.bcf.gz"
+    output:
+        outfiles="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/inds/{species}.txt"
+    shell:
+        """
+        # Use bcftools to list samples and save to the output file
+        bcftools query --list-samples {input.bcfgz} > {output.outfiles}
+        """
+
+
+
+# Rule to generate individual BED files based on specified criteria
+# Rule to generate individual BED files based on specified criteria
+rule generate_ind_beds:
+    input:
+        bcf="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/{species}.bcf.gz",
+        ind="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/inds/{species}.txt"
+    output:
+        output_file=expand("primatediversity/people/bjarkemp/diversitynrecombination/data/{species}/inds/$individual.bed", species=species)
+    params:
+        MIN_HET_AD=10,  # Adjust this value as needed
+        GQ=20  # Adjust this value as needed
+    shell:
+        """
+        for individual in $(cat {input.ind}); do
+            # Calculate modcov per individual using -s option
+            modcov=$(bcftools stats -s $individual -d 2,500,1 {input.bcf} | grep 'DP' | \
+                     grep -iv -e '#' -e '<' -e '>' | sort -k 6 -V -r | head -1 | cut -f 3)
+
+            min_cov=$((modcov / 2))
+            max_cov=$((modcov * 2))
+
+            # Define the output file path for the current individual
+            output_file="primatediversity/people/bjarkemp/diversitynrecombination/data/{species}/inds/$individual.bed"
+
+            # Apply filters and process variants, output to the defined file path
+            bcftools view -s $individual {input.bcf} | \
+                bcftools filter -e "(GT='./.') | (GT='het' & FMT/AD[*:*] < {params.MIN_HET_AD} ) | FMT/DP <= $min_cov | FMT/DP >= $max_cov | FMT/GQ <= {params.GQ}" | \
+                grep -v '#' | \
+                awk 'BEGIN{{OFS="\\t"}}{{ print $1, $2-1, $2 }}' - | \
+                bedtools merge | \
+                sort -k1,1 -k2,2n | \
+                bedtools merge > "$output_file"
+        done
+        """
+
+
