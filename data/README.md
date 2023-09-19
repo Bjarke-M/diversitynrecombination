@@ -4,10 +4,9 @@ The folder will be devided into the following structure:
 
 Data/ ->    
 reference genome specific folders/: containing individual folders of the individuals/species that where mapped to this reference genome. ->
-    species_specific_folders/: containing a folder for each individual ->
-        individual folders/: a folder for the lifted files and one for the wb diversity files ->
-            Lifted folder -> the lifted 
-            Wb-div folder -> eventually the window-based genetic diversity files
+    LiftOver -> contain the lift over VCF and bcf files 
+    Mask -> contains the liftOver BED files per individual, these are used to make a callability mask (they are generated on the gvcf files)
+    
 
 
 There is also a metadata file, obtained from Erik S. for which i'll be ever greatful.
