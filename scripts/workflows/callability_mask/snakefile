@@ -1,68 +1,89 @@
-#workflow for filtering / masking varients called in the primate diversity project
-# the workflow outputs a bed file for each sample with the positions that are believed to be real variants 
+#workflow for assessing filtering the GENOME VCF files and generating BED files for each individual, only with the sites that pass the filters.
+# Define a Python function to generate the expand statement
 
-# #species = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops',
-#                  'Rhinopithecus_roxellana','Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
-#                  'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
-#                  'Pongo_abelii','Cercocebus_atys','Galago_moholi','Nomascus_leucogenys','Colobus_guereza',
-#                  'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
-#                  'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
 # Define the list of species you want to process
-species = ['Daubentonia_madagascariensis']
+species_list = ['Daubentonia_madagascariensis']
 
-# The 'all' rule is the top-level rule that specifies all the final output files. /home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/Daubentonia_madagascariensis/bcfs/Daubentonia_madagascariensis_lifted.bcf.gz
+input_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/PDGP_metadata.txt'
+dictionary_of_inds = {}
+with open(input_file, 'r') as file:
+    header = next(file)  # Read and skip the header line
+    for line in file:
+        fields = line.strip().split(',')
+        pdgp_id, genus, species, froh, sex, ref_assembly = fields
+        if not ref_assembly:  # Check if ref_assembly is empty
+            ref_assembly = 'unknown'
+        # Add the pdgp_id to the appropriate category in the dictionary
+        if ref_assembly not in dictionary_of_inds:
+            dictionary_of_inds[ref_assembly] = [pdgp_id]
+        else:
+            dictionary_of_inds[ref_assembly].append(pdgp_id)
+
+# Define a Python function to generate the expand statement
+def generate_input_paths(species_list, lifted_bed=False):
+    input_paths = []
+    for species in species_list:
+        if lifted_bed:
+            input_paths.extend([
+                f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/beds/{pdgp_id}_bed_lifted.bed"
+                for pdgp_id in dictionary_of_inds[species]
+            ])
+        else:
+            input_paths.extend([
+                f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pdgp_id}.bed"
+                for pdgp_id in dictionary_of_inds[species]
+            ])
+    return input_paths
+
+
+# Modify the rule all to use species_list for both original and lifted BED files
 rule all:
     input:
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}.txt", species=species)
+        expand(generate_input_paths(species_list), species=species_list),
+        expand(generate_input_paths(species_list, lifted_bed=True), species=species_list)
 
-
-# Rule to generate a list of samples from the input BCF file
-rule generate_sample_files:
-    input:
-        bcfgz="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted.bcf.gz"
-    output:
-        outfiles="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/inds/{species}.txt"
-    shell:
-        """
-        # Use bcftools to list samples and save to the output file
-        bcftools query --list-samples {input.bcfgz} > {output.outfiles}
-        """
-
-
-
-# Rule to generate individual BED files based on specified criteria
 # Rule to generate individual BED files based on specified criteria
 rule generate_ind_beds:
     input:
-        bcf="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/{species}.bcf.gz",
-        ind="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/inds/{species}.txt"
+        vcf="/home/bjarkemp/primatediversity/data/het_data_11_04_2022/{pdgp_id}/{pdgp_id}_concat.vcf.gz",
     output:
-        output_file=expand("primatediversity/people/bjarkemp/diversitynrecombination/data/{species}/inds/$individual.bed", species=species)
+        output_file="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pdgp_id}.bed",
+        modcov_file="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pdgp_id}_modcov.txt"
     params:
-        MIN_HET_AD=10,  # Adjust this value as needed
-        GQ=20  # Adjust this value as needed
+        MIN_HET_AD=3,  # Adjust this value as needed
+        GQ=30  # Adjust this value as needed
     shell:
         """
-        for individual in $(cat {input.ind}); do
-            # Calculate modcov per individual using -s option
-            modcov=$(bcftools stats -s $individual -d 2,500,1 {input.bcf} | grep 'DP' | \
-                     grep -iv -e '#' -e '<' -e '>' | sort -k 6 -V -r | head -1 | cut -f 3)
+        modcov=$(bcftools stats -d 2,500,1 {input.vcf} | grep 'DP' | \
+        grep -iv -e '#' -e '<' -e '>' | sort -k 6 -V -r | head -1 | awk '{{print $3}}')
+        echo $modcov > {output.modcov_file}
+        min_cov=$((modcov / 2))
+        max_cov=$((modcov * 2))
+        # Define the output file path for the current individual
+        # Apply filters and process variants, output to the defined file path
+        bcftools view {input.vcf} | \
+            bcftools filter -e "(GT='./.') | (GT='het' & FMT/AD[*:*] < {params.MIN_HET_AD} ) | FMT/DP <= $min_cov | FMT/DP >= $max_cov | FMT/GQ <= {params.GQ}" | \
+            grep -v '#' | \
+            awk 'BEGIN{{OFS="\\t"}}{{ print $1, $2-1, $2 }}' - | \
+            bedtools merge | \
+            sort -k1,1 -k2,2n | \
+            bedtools merge > {output.output_file}
+        """
 
-            min_cov=$((modcov / 2))
-            max_cov=$((modcov * 2))
-
-            # Define the output file path for the current individual
-            output_file="primatediversity/people/bjarkemp/diversitynrecombination/data/{species}/inds/$individual.bed"
-
-            # Apply filters and process variants, output to the defined file path
-            bcftools view -s $individual {input.bcf} | \
-                bcftools filter -e "(GT='./.') | (GT='het' & FMT/AD[*:*] < {params.MIN_HET_AD} ) | FMT/DP <= $min_cov | FMT/DP >= $max_cov | FMT/GQ <= {params.GQ}" | \
-                grep -v '#' | \
-                awk 'BEGIN{{OFS="\\t"}}{{ print $1, $2-1, $2 }}' - | \
-                bedtools merge | \
-                sort -k1,1 -k2,2n | \
-                bedtools merge > "$output_file"
-        done
+#lift bed files to the human reference genome
+rule liftover_generate_bed:
+    input:
+        chain_file="/home/bjarkemp/primatediversity/data/chain_files_15_03_2022/{species}_To_hg38.liftOver.gz",
+        input_bed= '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pdgp_id}.bed'
+    output:
+        bed="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/beds/{pdgp_id}_bed_lifted.bed",
+        unmapbed="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/mask/{species}/beds/{pdgp_id}_bed_lifted.bed.unmap"
+    shell:
+        """
+        # Run CrossMap.py to perform liftover and generate VCF files
+        CrossMap.py bed --chromid l --no-comp-alleles {input.chain_file} {input.input_bed} {output.bed} 
+        bedtools sort -i {output.bed} > {output.bed}
+        bedtools sort -i {output.unmapbed} > {output.unmapbed}
         """
 
 
