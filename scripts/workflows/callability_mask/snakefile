@@ -1,8 +1,18 @@
 #workflow for assessing filtering the GENOME VCF files and generating BED files for each individual, only with the sites that pass the filters.
 # Define a Python function to generate the expand statement
+# Import the snakemake module for working with snakemake files
+#species_list = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops',
+                # 'Rhinopithecus_roxellana','Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
+                # 'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
+                # 'Pongo_abelii','Cercocebus_atys','Galago_moholi','Nomascus_leucogenys','Colobus_guereza',
+                # 'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
+                # 'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
+species_list = ['Daubentonia_madagascariensis','Loris_tardigradus']
 
+#Missing g.vcf.gz species: Theropithecus_gelada
+#Missing chainfiles: Carlito_syrichta Propithecus_coquereli'
 # Define the list of species you want to process
-species_list = ['Daubentonia_madagascariensis']
+
 
 input_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/PDGP_metadata.txt'
 dictionary_of_inds = {}
@@ -19,18 +29,24 @@ with open(input_file, 'r') as file:
         else:
             dictionary_of_inds[ref_assembly].append(pdgp_id)
 
+
 # Define a Python function to generate the expand statement
-def generate_input_paths(species_list, lifted_bed=False):
+def generate_input_paths(species_list, lifted_bed):
     input_paths = []
     for species in species_list:
-        if lifted_bed:
+        if lifted_bed==0:
             input_paths.extend([
-                f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/beds/{pdgp_id}_bed_lifted.bed"
+                f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pdgp_id}/{pdgp_id}.bed"
                 for pdgp_id in dictionary_of_inds[species]
             ])
-        else:
+        elif lifted_bed==1:
             input_paths.extend([
-                f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pdgp_id}.bed"
+                f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pdgp_id}/{pdgp_id}_bed_lifted.bed"
+                for pdgp_id in dictionary_of_inds[species]
+            ])
+        elif lifted_bed==2:
+            input_paths.extend([
+                f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pdgp_id}/{pdgp_id}_lifted_sorted.bed"
                 for pdgp_id in dictionary_of_inds[species]
             ])
     return input_paths
@@ -39,16 +55,17 @@ def generate_input_paths(species_list, lifted_bed=False):
 # Modify the rule all to use species_list for both original and lifted BED files
 rule all:
     input:
-        expand(generate_input_paths(species_list), species=species_list),
-        expand(generate_input_paths(species_list, lifted_bed=True), species=species_list)
+        expand(generate_input_paths(species_list, lifted_bed=0), species=species_list),
+        expand(generate_input_paths(species_list, lifted_bed=1), species=species_list),
+        expand(generate_input_paths(species_list, lifted_bed=2), species=species_list)
 
 # Rule to generate individual BED files based on specified criteria
 rule generate_ind_beds:
     input:
         vcf="/home/bjarkemp/primatediversity/data/het_data_11_04_2022/{pdgp_id}/{pdgp_id}_concat.vcf.gz",
     output:
-        output_file="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pdgp_id}.bed",
-        modcov_file="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pdgp_id}_modcov.txt"
+        output_file="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pdgp_id}/{pdgp_id}.bed",
+        modcov_file="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pdgp_id}/{pdgp_id}_modcov.txt"
     params:
         MIN_HET_AD=3,  # Adjust this value as needed
         GQ=30  # Adjust this value as needed
@@ -74,16 +91,24 @@ rule generate_ind_beds:
 rule liftover_generate_bed:
     input:
         chain_file="/home/bjarkemp/primatediversity/data/chain_files_15_03_2022/{species}_To_hg38.liftOver.gz",
-        input_bed= '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pdgp_id}.bed'
+        input_bed= '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pdgp_id}/{pdgp_id}.bed'
     output:
-        bed="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/beds/{pdgp_id}_bed_lifted.bed",
-        unmapbed="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/mask/{species}/beds/{pdgp_id}_bed_lifted.bed.unmap"
+        bed="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pdgp_id}/{pdgp_id}_bed_lifted.bed",
+        unmapbed="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pdgp_id}/{pdgp_id}_bed_lifted.bed.unmap"
     shell:
         """
         # Run CrossMap.py to perform liftover and generate VCF files
-        CrossMap.py bed --chromid l --no-comp-alleles {input.chain_file} {input.input_bed} {output.bed} 
-        bedtools sort -i {output.bed} > {output.bed}
-        bedtools sort -i {output.unmapbed} > {output.unmapbed}
+        CrossMap.py bed --chromid l {input.chain_file} {input.input_bed} {output.bed} --unmap-file {output.unmapbed}
         """
 
 
+
+rule sort_lifted:
+    input:
+        input_bed= '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pdgp_id}/{pdgp_id}_bed_lifted.bed'
+    output:
+        bed="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pdgp_id}/{pdgp_id}_lifted_sorted.bed"
+    shell:
+        """
+        sort -k1,1 -k2,2n {input.input_bed} > {output.bed}
+        """
