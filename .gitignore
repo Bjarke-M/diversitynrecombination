@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+#ignore updates in data folder
+/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/**
+
+#ignore snakejob files
+snakejob.*
