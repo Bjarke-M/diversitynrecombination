@@ -129,6 +129,8 @@ dmypy.json
 .pyre/
 
 #ignore updates in data folder
-/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/*
+/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/*
+/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/*
+
 #ignore snakejob files
 snakejob.*
