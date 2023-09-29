@@ -28,10 +28,18 @@ def generate_input_paths(species_list, window_size, plots=False):
     return input_paths
 
 
-## MAKE WINDOW BEDS ##
-#window_list = [100, 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 2000000]
-window_list = [100, 1000]
-species_list = ['Daubentonia_madagascariensis']
+# ## MAKE WINDOW BEDS ##
+
+window_list = [1000, 5000, 10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
+species_list = ['Saguinus_midas']
+#species_list = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops',
+#                 'Rhinopithecus_roxellana','Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
+#                 'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
+#                 'Pongo_abelii','Cercocebus_atys','Galago_moholi','Nomascus_leucogenys','Colobus_guereza',
+#                 'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
+#                 'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
+#Missing g.vcf.gz species: Theropithecus_gelada
+#Missing chainfiles: Carlito_syrichta Propithecus_coquereli'
 
 
 # Modify the rule all to use species_list for both original and lifted BED files
@@ -74,8 +82,7 @@ rule calculate_coverage:
 
 rule make_plots:
     input:
-        coverage_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pd_id}/{pd_id}_coverage_{window_size}.txt',
-        dir_path = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pd_id}/plots/'
+        coverage_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pd_id}/{pd_id}_coverage_{window_size}.txt'
     output:
         plots = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pd_id}/plots/{window_size}_coverage.pdf'
     params:
@@ -85,3 +92,4 @@ rule make_plots:
     conda:
         'envs/coverage_plots.yaml'
     script: '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/calculate_win_based_coverage/plot_coverage.R'
+
