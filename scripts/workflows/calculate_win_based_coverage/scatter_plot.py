@@ -5,42 +5,37 @@ import os
 input_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/PDGP_metadata.txt'
 data_dir = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/'
 
-# Load metadata into dictionaries
-dictionary_of_inds = {}
-dictionary_of_species = {}
 
-with open(input_file, 'r') as file:
-    header = next(file)
-    for line in file:
-        pdgp_id, genus, species, froh, sex, ref_assembly = line.strip().split(',')
-        species = f"{genus}_{species}"
-        dictionary_of_inds.setdefault(ref_assembly, []).append(pdgp_id)
-        dictionary_of_species.setdefault(species, []).append(pdgp_id)
+#/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/Saguinus_midas/PD_0017/PD_0017_coverage_2000000.txt
 
-# Define the list of window sizes
-window_list = [1000, 5000, 10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
+def generate_input_files(ind_coverage_file,window_size):
+    with open(ind_coverage_file, 'r') as f:
+        next(f)
+        list_of_files = []
+        for line in f:
+            PDGP_ID,Genus,Species,FROH,Sex,ref_assembly = line.strip().split(',')
+            #if ref_assembly != '':
+            if ref_assembly == 'Saguinus_midas': 
+                file_path = os.path.join(data_dir, ref_assembly, PDGP_ID, f'{PDGP_ID}_coverage_{window_size}.txt')
+                list_of_files.append(file_path)
+    return list_of_files
 
-# Create a DataFrame to store the results
-result_list = []
+#def get_ind_name_from_path():
 
-# Iterate through individuals and window sizes
-for ref_assembly, pd_ids in dictionary_of_inds.items():
-    for pd_id in pd_ids:
-        for window_size in window_list:
-            # Generate the file path
-            file_path = os.path.join(data_dir, ref_assembly, pd_id, f"{pd_id}_coverage_{window_size}.txt")
-            # Check if the file exists
-            if os.path.isfile(file_path):
-                # Read the data from the file
-                data = pd.read_csv(file_path, header=None, names=['chrA', 'startA', 'stopA', 'chrB', 'startB', 'stopB', 'n'], sep='\t')
-                
-                # Calculate n/window_size
-                n_over_window = data['n'].sum() / window_size
-                
-                # Append the result directly to the list
-                result_list.append([ref_assembly, pd_id, species, n_over_window, data['chrA'].iloc[0]])
 
-# Create a DataFrame from the result list
-result_df = pd.DataFrame(result_list, columns=['ref_assembly', 'pd_id', 'species', 'n/window_size', 'chrA'])
+def extract_data_from_files(list_of_files,window_size):
+    result_df = pd.DataFrame(columns=['chra', 'starta', 'coverage', 'frequency'])
+    for file in list_of_files:
+        data = pd.read_csv(file, sep='\t', header=None, names=['chra', 'starta', 'enda', 'chrb', 'startb', 'stopb' ,'coverage'])
+        # Group by 'chra' and 'starta', then sum the 'coverage' for each group
+        grouped_data = data.groupby(['chra', 'starta'])['coverage'].sum().reset_index()
+        # Calculate 'sum_of_cov / window_size'
+        grouped_data['frequency'] = grouped_data['coverage'] / window_size
+        # Append the grouped data to the result DataFrame
+        result_df = pd.concat([result_df, grouped_data])
+        print(result_df)
 
-print(result_df)
+
+
+
+extract_data_from_files(['/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/Saguinus_midas/PD_0017/PD_0017_coverage_2000000.txt'])
