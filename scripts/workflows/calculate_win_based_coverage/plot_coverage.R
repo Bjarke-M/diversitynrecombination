@@ -2,15 +2,12 @@ library(tidyverse)
 
 distribution_plot <- function(input_file, species_name, window_size, pd_id, outfile) {
   # Read the coverage data from the input file
-  coverage <- read_table(input_file, col_names = c('chrA', 'startA', 'stopA', 'chrB', 'startB', 'stopB', 'n'))  %>% 
-  select(chrA, stopA, n) %>%
-  group_by(chrA, stopA) %>%
-  summarise(freq = sum(n)/window_size)
+  coverage <- read_csv(input_file)
  
- median_freq_df <- coverage %>%
- group_by(chrA) %>%
- na.omit() %>%
- summarise(median_freq = round(median(freq),2))
+  median_freq_df <- coverage %>%
+  group_by(chrA) %>%
+  na.omit() %>%
+  summarise(median_freq = round(median(freq),2))
   
   
   # Create the histogram plot

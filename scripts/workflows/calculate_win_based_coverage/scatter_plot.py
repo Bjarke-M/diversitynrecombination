@@ -1,41 +1,84 @@
 import pandas as pd
 import os
 
+
 # Define the input path
 input_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/PDGP_metadata.txt'
 data_dir = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/'
 
-
-#/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/Saguinus_midas/PD_0017/PD_0017_coverage_2000000.txt
-
-def generate_input_files(ind_coverage_file,window_size):
-    with open(ind_coverage_file, 'r') as f:
+def generate_input_files(metadata, window_size):
+    with open(metadata, 'r') as f:
         next(f)
-        list_of_files = []
+        list_of_files = {}
         for line in f:
-            PDGP_ID,Genus,Species,FROH,Sex,ref_assembly = line.strip().split(',')
-            #if ref_assembly != '':
-            if ref_assembly == 'Saguinus_midas': 
-                file_path = os.path.join(data_dir, ref_assembly, PDGP_ID, f'{PDGP_ID}_coverage_{window_size}.txt')
-                list_of_files.append(file_path)
+            PDGP_ID, Genus, Species, FROH, Sex, ref_assembly = line.strip().split(',')
+            if ref_assembly == 'Daubentonia_madagascariensis':
+                file_path = os.path.join(data_dir, ref_assembly, PDGP_ID, 'csv' , f'{PDGP_ID}_masked_{window_size}.csv')
+                # Include sex, species, and ID in the dictionary
+                list_of_files[PDGP_ID] = {
+                    'Genus': Genus,
+                    'Species': Species,
+                    'FROH': FROH,
+                    'Sex': Sex,
+                    'ref_assembly': ref_assembly,
+                    'file_path': file_path
+                }
     return list_of_files
 
-#def get_ind_name_from_path():
+def extract_data_from_files(list_of_files, window_size):
+    dfs = {}
+    for ind, info in list_of_files.items():  # Iterate over the dictionary items
+        #print(ind)
+        file_path = info['file_path']
+        #print(file_path)
+    #     file_path = info['file_path']
+       # Read the CSV file
+        data = pd.read_csv(file_path, header=0)  # Assuming the first row contains column headers
+        print(data[:5:])
+        if ind not in dfs:
+            dfs[ind] = {}
+        median_freq_by_chr = data.groupby('chrA')['freq'].median().to_dict()
+        #print(median_freq_by_chr)
+        # Add the result to the list of DataFrames
+        dfs[ind][window_size]=median_freq_by_chr
+        print(dfs)
+    return dfs
 
 
-def extract_data_from_files(list_of_files,window_size):
-    result_df = pd.DataFrame(columns=['chra', 'starta', 'coverage', 'frequency'])
-    for file in list_of_files:
-        data = pd.read_csv(file, sep='\t', header=None, names=['chra', 'starta', 'enda', 'chrb', 'startb', 'stopb' ,'coverage'])
-        # Group by 'chra' and 'starta', then sum the 'coverage' for each group
-        grouped_data = data.groupby(['chra', 'starta'])['coverage'].sum().reset_index()
-        # Calculate 'sum_of_cov / window_size'
-        grouped_data['frequency'] = grouped_data['coverage'] / window_size
-        # Append the grouped data to the result DataFrame
-        result_df = pd.concat([result_df, grouped_data])
-        print(result_df)
 
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 
+def create_scatter_plot(data_dict):
+    # Convert the dictionary to a pandas DataFrame for easier manipulation
+    df = pd.DataFrame(data_dict)
 
+    # Reset index and rename columns for better visualization
+    df = df.reset_index()
+    df = df.rename(columns={"index": "Window Size"})
 
-extract_data_from_files(['/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/Saguinus_midas/PD_0017/PD_0017_coverage_2000000.txt'])
+    # Melt the DataFrame to make it suitable for scatter plot and faceting
+    df = pd.melt(df, id_vars=["Window Size"], var_name="Chromosome", value_name="Frequency")
+
+    # Create a scatter plot using seaborn
+    sns.set(style="whitegrid")
+    g = sns.relplot(
+        data=df,
+        x="Window Size",
+        y="Frequency",
+        hue="Chromosome",
+        kind="scatter",
+        facet_kws=dict(sharex=False),
+        height=5,
+        aspect=1.5
+    )
+
+    # Customize plot labels and title
+    g.set_axis_labels("Window Size", "Frequency")
+    g.set_titles("Chromosome {col_name}")
+
+    # Show the plot
+    plt.show()
+
+create_scatter_plot(extract_data_from_files(generate_input_files(input_file, 2000000),2000000))
