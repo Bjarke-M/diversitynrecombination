@@ -78,10 +78,11 @@ rule generate_window_sized_beds:
         outfile = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/coverage/bed_original/{window_size}_window.bed'
     conda:
         'envs/bedtools.yaml'
+    log:
+        '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/calculate_win_based_coverage/logs/generate_windows.log'
     shell:
         '''
         bedtools makewindows -g {input.reference_genome} -w {wildcards.window_size} > {output}
-        #sort -k1,1 -k2,2n {output} > {output}
         '''
 
 
@@ -95,9 +96,13 @@ rule extract_par_region_in_window:
         par_end = 2816500, #the end of the XG gene, which is thourght to lie on the border of the PAR
         chr_end = 156040895, #the end of the X chromosome
         window_size = "{window_size}"
+    log:
+        '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/calculate_win_based_coverage/logs/{window_size}_extract_par_region.log'
     shell:
         '''
         python3.10 /home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/calculate_win_based_coverage/extract_par_region.py {input.file} {output.out} {params.window_size} {params.par_end} {params.chr_end}
+        sort -k1,1 -k2,2n {output}_temp > {output}
+        rm {output}_temp
         '''
 
 rule rename_par_in_lifted_bed:
@@ -107,10 +112,13 @@ rule rename_par_in_lifted_bed:
         outfile = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pd_id}/{pd_id}_lifted_sorted_par.bed'
     params:
         par_end = 2816500, #the end of the XG gene, which is thourght to lie on the border of the PAR
-
+    log:
+        '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/calculate_win_based_coverage/logs/{species}_{pd_id}_rename_par.log'
     shell:
         '''
-        python3.10 /home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/calculate_win_based_coverage/rename_par.py {input.callable_vcf} {output.outfile} {params.par_end}
+        python3.10 /home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/calculate_win_based_coverage/rename_par.py {input.callable_vcf} {output.outfile}_temp {params.par_end}
+        sort -k1,1 -k2,2n {output.outfile}_temp > {output.outfile}
+        rm {output.outfile}_temp
         '''
     
     
@@ -126,6 +134,8 @@ rule calculate_coverage:
         PAR_region = 2816500 #the end of the XG gene, which is thought to lie on the border of the PAR
     conda:
         'envs/bedtools.yaml'
+    log:
+        '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/calculate_win_based_coverage/logs/{window_size}_{species}_{pd_id}_calculate_coverage.log'
     shell:
         '''
         bedtools intersect -a {input.window_file} -b {input.callable_vcf} -wo > {output.outfile}
