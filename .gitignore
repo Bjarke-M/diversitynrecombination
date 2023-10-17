@@ -136,3 +136,5 @@ coverage
 #ignore snakejob files
 snakejob.*
 .snakemake
+
+*.zarr/
