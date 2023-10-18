@@ -8,7 +8,7 @@ species_list = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aet
                 'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
                 'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
 
-#Missing g.vcf.gz species: Theropithecus_gelada
+#Missing g.vcf.gz species: Theropithecus_gelada 'Papio_anubis'
 #Missing chainfiles: Carlito_syrichta Propithecus_coquereli'
 # Define the list of species you want to process
 
