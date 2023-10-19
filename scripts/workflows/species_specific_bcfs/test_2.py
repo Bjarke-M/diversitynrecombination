@@ -1,3 +1,6 @@
+ref_list = ['Saguinus_midas']
+#Missing g.vcf.gz species: Theropithecus_gelada
+#Missing chainfiles: Carlito_syrichta Propithecus_coquereli'
 input_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/PDGP_metadata.txt'
 dictionary_of_inds = {}
 with open(input_file, 'r') as file:
@@ -14,27 +17,18 @@ with open(input_file, 'r') as file:
             dictionary_of_inds[ref_assembly][species] = [pdgp_id]
         else:
             dictionary_of_inds[ref_assembly][species].append(pdgp_id)
+            
 
-# def get_output_paths(dictionary_of_inds, ref_assembly, species):
-#     return [
-#         f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_only.bcf.gz"
-#         for species in dictionary_of_inds[ref_assembly]
-#     ]
-def get_output_paths(dictionary_of_inds):
+def get_output_paths(dictionary_of_inds, ref_list):
     out_paths = []
     for ref_assembly in dictionary_of_inds:
-        #print(ref_assembly)
-        for species in dictionary_of_inds[ref_assembly]:
-            #print(ref_assembly,species)
-            out_paths.extend([
-                    f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_only.bcf.gz"
-                    for species in dictionary_of_inds[ref_assembly]
-                ])
+        if ref_assembly != 'unknown' and ref_assembly in ref_list:
+            for species in dictionary_of_inds[ref_assembly]:
+                file_path = f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_only.bcf.gz".strip()
+                out_paths.append(file_path)
     return out_paths
-
 
 def get_pd_ids_from_species(dictionary_of_inds, ref_assembly, species):
     return ','.join(dictionary_of_inds[ref_assembly][species])
 
 print(get_pd_ids_from_species(dictionary_of_inds, 'Saguinus_midas', 'mystax'))
-

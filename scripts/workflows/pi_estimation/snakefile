@@ -7,6 +7,9 @@
 ref_list = ['Saguinus_midas']
 #Missing g.vcf.gz species: Theropithecus_gelada
 #Missing chainfiles: Carlito_syrichta Propithecus_coquereli'
+
+window_list = [1000, 5000, 10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
+
 input_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/PDGP_metadata.txt'
 def generatedictionary(input):
     dictionary_of_species_n_pdid = {}
@@ -39,26 +42,39 @@ def get_output_paths(dictionary_of_species_n_pdid):
                     ])
     return out_paths
 
-
-dictionary_of_inds = generatedictionary(input_file)
-
 rule all:
     input:
         expand(get_output_paths(dictionary_of_inds), ref_assembly=ref_list)
+        #make output for make_window_file
 
-rule species_specific_bcfs:
+rule windowed_pi_for_each_species:
     input:
-        bcfs = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{ref_assembly}/bcfs/{ref_assembly}_lifted.bcf.gz'
+        bcf = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_only.bcf.gz"
     output:
-        species_specific = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_only.bcf.gz",
-        isolation_file = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_isolation.txt"
+        windowed_pi = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}_{window_size}.windowed.pi"
     params:
-        ref = lambda wildcards: wildcards.ref_assembly,
-        speciesname = lambda wildcards: wildcards.species,
-    conda:
-        'envs/bcftools.yaml'
+        window = "{window_size}"
     shell:
         """
-        python3.10 /home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/species_specific_bcfs/isolation_file.py {params.ref} {params.speciesname} {output.isolation_file}
-        bcftools view -O b -S {output.isolation_file} {input.bcfs} > {output.species_specific}
+        vcftools --bcf {input.bcf} --window-pi {params.window} --out {output.windowed_pi}
         """
+
+# rule make_window_file:
+#     input:
+#         window_pi = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}_{window_size}.windowed.pi"
+#     output:
+#         window_bed = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}_{window_size}.bed"
+#     shell:
+#         """
+#         #get the start end and chr and make bed file maybe
+#         awk 'NR > 1 {print $1 "\t" $2 "\t" $3}' input.txt > output.bed
+#         """
+
+rule get_average_cov:
+    input:
+        isolation_file = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_isolation.txt"
+    output:
+        average_cov = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask_cov/{ref_assembly}/{species}_window_mask_cov.csv"
+    shell:
+        """
+        #get the average coverage for each species per window
