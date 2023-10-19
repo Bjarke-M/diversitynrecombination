@@ -1,16 +1,6 @@
-# ref_list = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops','Rhinopithecus_roxellana',
-#                 'Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
-#                 'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
-#                 'Pongo_abelii','Cercocebus_atys','Galago_moholi','Nomascus_leucogenys','Colobus_guereza',
-#                 'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
-#                 'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
-ref_list = ['Saguinus_midas']
-#Missing g.vcf.gz species: Theropithecus_gelada
-#Missing chainfiles: Carlito_syrichta Propithecus_coquereli'
+#Snakefile for calculating windowed pi for each species
 
-window_list = [1000, 5000, 10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
 
-input_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/PDGP_metadata.txt'
 def generatedictionary(input):
     dictionary_of_species_n_pdid = {}
     with open(input_file, 'r') as file:
@@ -29,30 +19,33 @@ def generatedictionary(input):
                 dictionary_of_species_n_pdid[ref_assembly][species].append(pdgp_id)
     return dictionary_of_species_n_pdid 
 
-def get_output_paths(dictionary_of_species_n_pdid, window=False):
+def get_output_paths_(dictionary_of_species_n_pdid, window_list):
     out_paths = []
     for ref_assembly in dictionary_of_species_n_pdid:
         if ref_assembly != 'unknown' and ref_assembly in ref_list:
-        #print(ref_assembly)
             for species in dictionary_of_species_n_pdid[ref_assembly]:
-                #print(ref_assembly,species)
-                if window:
-                    for window_size in window_list:
-                        out_paths.append(
-                            f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}_{window_size}.windowed.pi"
-                        )
-                else:
-                    out_paths.extend([
-                            f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_only.bcf.gz"
-                            for species in dictionary_of_species_n_pdid[ref_assembly]
-                        ])
+                for window_size in window_list:
+                    out_paths.append(f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}_{window_size}.windowed.pi")
     return out_paths
+
+## LOAD DICTIONARY AND WINDOWLIST AND REFS 
+# ref_list = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops','Rhinopithecus_roxellana',
+#                 'Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
+#                 'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
+#                 'Pongo_abelii','Cercocebus_atys','Galago_moholi','Nomascus_leucogenys','Colobus_guereza',
+#                 'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
+#                 'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
+ref_list = ['Saguinus_midas']
+#Missing g.vcf.gz species: Theropithecus_gelada
+#Missing chainfiles: Carlito_syrichta Propithecus_coquereli'
+input_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/PDGP_metadata.txt'
+list_of_windows = [1000, 5000, 10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
+dictionary_of_inds=generatedictionary(input_file)
+
 
 rule all:
     input:
-        expand(get_output_paths(dictionary_of_inds), ref_assembly=ref_list),
-        expand(get_output_paths(dictionary_of_inds, window=True), ref_assembly=ref_list)
-        #make output for make_window_file
+        expand(get_output_paths(dictionary_of_inds, list_of_windows), ref_assembly=ref_list)
 
 rule windowed_pi_for_each_species:
     input:
