@@ -29,22 +29,29 @@ def generatedictionary(input):
                 dictionary_of_species_n_pdid[ref_assembly][species].append(pdgp_id)
     return dictionary_of_species_n_pdid 
 
-def get_output_paths(dictionary_of_species_n_pdid):
+def get_output_paths(dictionary_of_species_n_pdid, window=False):
     out_paths = []
     for ref_assembly in dictionary_of_species_n_pdid:
         if ref_assembly != 'unknown' and ref_assembly in ref_list:
         #print(ref_assembly)
             for species in dictionary_of_species_n_pdid[ref_assembly]:
                 #print(ref_assembly,species)
-                out_paths.extend([
-                        f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_only.bcf.gz"
-                        for species in dictionary_of_species_n_pdid[ref_assembly]
-                    ])
+                if window:
+                    for window_size in window_list:
+                        out_paths.append(
+                            f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}_{window_size}.windowed.pi"
+                        )
+                else:
+                    out_paths.extend([
+                            f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_only.bcf.gz"
+                            for species in dictionary_of_species_n_pdid[ref_assembly]
+                        ])
     return out_paths
 
 rule all:
     input:
-        expand(get_output_paths(dictionary_of_inds), ref_assembly=ref_list)
+        expand(get_output_paths(dictionary_of_inds), ref_assembly=ref_list),
+        expand(get_output_paths(dictionary_of_inds, window=True), ref_assembly=ref_list)
         #make output for make_window_file
 
 rule windowed_pi_for_each_species:
@@ -70,11 +77,11 @@ rule windowed_pi_for_each_species:
 #         awk 'NR > 1 {print $1 "\t" $2 "\t" $3}' input.txt > output.bed
 #         """
 
-rule get_average_cov:
-    input:
-        isolation_file = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_isolation.txt"
-    output:
-        average_cov = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask_cov/{ref_assembly}/{species}_window_mask_cov.csv"
-    shell:
-        """
-        #get the average coverage for each species per window
+# rule get_average_cov:
+#     input:
+#         isolation_file = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_isolation.txt"
+#     output:
+#         average_cov = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask_cov/{ref_assembly}/{species}_window_mask_cov.csv"
+#     shell:
+#         """
+#         #get the average coverage for each species per window

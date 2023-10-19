@@ -138,3 +138,4 @@ snakejob.*
 .snakemake
 
 *.zarr/
+*data/
