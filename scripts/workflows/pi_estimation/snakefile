@@ -19,13 +19,21 @@ def generatedictionary(input):
                 dictionary_of_species_n_pdid[ref_assembly][species].append(pdgp_id)
     return dictionary_of_species_n_pdid 
 
-def get_output_paths_(dictionary_of_species_n_pdid, window_list):
+def get_output_paths(dictionary_of_species_n_pdid, window_list, command):
     out_paths = []
     for ref_assembly in dictionary_of_species_n_pdid:
         if ref_assembly != 'unknown' and ref_assembly in ref_list:
             for species in dictionary_of_species_n_pdid[ref_assembly]:
-                for window_size in window_list:
-                    out_paths.append(f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}_{window_size}.windowed.pi")
+                if command=='windowpi':
+                    for window_size in window_list:
+                        out_paths.append(f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/{species}_{window_size}.windowed.pi")
+                elif command=='windowbed':
+                    for window_size in window_list:
+                        out_paths.append(f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/{species}_{window_size}.bed")
+                elif command=='maskcov':
+                    for window_size in window_list:
+                        for pd_id in dictionary_of_species_n_pdid[ref_assembly][species]:
+                            out_paths.append(f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/{pd_id}/txt/{pd_id}_coverage_{window_size}.txt")
     return out_paths
 
 ## LOAD DICTIONARY AND WINDOWLIST AND REFS 
@@ -45,34 +53,73 @@ dictionary_of_inds=generatedictionary(input_file)
 
 rule all:
     input:
-        expand(get_output_paths(dictionary_of_inds, list_of_windows), ref_assembly=ref_list)
+        expand(get_output_paths(dictionary_of_inds, list_of_windows, 'windowpi'), ref_assembly=ref_list),
+        expand(get_output_paths(dictionary_of_inds, list_of_windows, 'windowbed'), ref_assembly=ref_list),
+        expand(get_output_paths(dictionary_of_inds, list_of_windows, 'maskcov'), ref_assembly=ref_list)
 
 rule windowed_pi_for_each_species:
     input:
         bcf = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_only.bcf.gz"
     output:
-        windowed_pi = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}_{window_size}.windowed.pi"
+        windowed_pi = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/{species}_{window_size}.windowed.pi"
     params:
-        window = "{window_size}"
+        window = "{window_size}",
+        prefix = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/{species}_{window_size}"
+    log:
+        '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/pi_estimation/windowed_pi/{ref_assembly}/{species}_{window_size}.log'
+    conda:
+        'envs/vcftools.yaml'
     shell:
         """
-        vcftools --bcf {input.bcf} --window-pi {params.window} --out {output.windowed_pi}
+        vcftools --bcf {input.bcf} --window-pi {params.window} --out {params.prefix} 2> {log}
         """
 
-# rule make_window_file:
+rule make_window_file:
+    input:
+        window_pi = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/{species}_{window_size}.windowed.pi"
+    output:
+        window_bed = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/{species}_{window_size}.bed"
+    shell:
+        """
+        #get the start end and chr and make bed file maybe
+        awk 'NR > 1 {{print $1 "\t" $2 "\t" $3}}' {input.window_pi} > {output.window_bed}
+        """
+
+rule intersect_callable:
+    input:
+        window_file = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/{species}_{window_size}.bed",        
+        callable_vcf = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{pd_id}/{pd_id}_lifted_sorted.bed'
+    output:
+        outfile = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/{pd_id}/txt/{pd_id}_coverage_{window_size}.txt'
+    conda:
+        'envs/bedtools.yaml'
+    log:
+        '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/mask/{ref_assembly}/{species}/{pd_id}/txt/{pd_id}_coverage_{window_size}.log'
+    shell:
+        '''
+        bedtools intersect -a {input.window_file} -b {input.callable_vcf} -wo > {output.outfile} 2> {log}
+        '''
+
+## NOTE: extract PAR regions from the callable vcf file, maybe i shoudl delete the par region from the bcf.gz file and then make a file only with the par regions and run the window pi seperately..
+## maybe bcf view can be used in a way..?? look into this it might be easier
+
+# rule calculate_coverage:
 #     input:
-#         window_pi = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}_{window_size}.windowed.pi"
+#         ind_isolation_files = /home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_isolation.txt
 #     output:
-#         window_bed = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}_{window_size}.bed"
-#     shell:
-#         """
-#         #get the start end and chr and make bed file maybe
-#         awk 'NR > 1 {print $1 "\t" $2 "\t" $3}' input.txt > output.bed
-#         """
+#         masked_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/{pd_id}/csv/{pd_id}_masked_{window_size}.csv'
+#     params:
+#         window_size = "{window_size}",
+#         pd_id = "{pd_id}",
+#         sex = lambda wildcards: get_sex(wildcards.pd_id)
+#     conda:
+#         'envs/maskfile.yaml'
+#     script: '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/calculate_win_based_coverage/maskfile.R'
 
 # rule get_average_cov:
 #     input:
-#         isolation_file = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_isolation.txt"
+#           expand
+#         #isolation_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/{pd_id}/csv/{pd_id}_masked_{window_size}.csv'
 #     output:
 #         average_cov = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask_cov/{ref_assembly}/{species}_window_mask_cov.csv"
 #     shell:
