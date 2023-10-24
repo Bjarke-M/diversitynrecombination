@@ -1,9 +1,10 @@
-ref_list = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops','Rhinopithecus_roxellana',
-                'Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
-                'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
-                'Pongo_abelii','Cercocebus_atys','Galago_moholi','Nomascus_leucogenys','Colobus_guereza',
-                'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
-                'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
+# ref_list = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops','Rhinopithecus_roxellana',
+#                 'Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
+#                 'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
+#                 'Pongo_abelii','Cercocebus_atys','Galago_moholi','Nomascus_leucogenys','Colobus_guereza',
+#                 'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
+#                 'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
+ref_list = ['Daubentonia_madagascariensis']
 
 #Missing g.vcf.gz species: Theropithecus_gelada
 #Missing chainfiles: Carlito_syrichta Propithecus_coquereli'
@@ -26,17 +27,33 @@ def generatedictionary(input):
                 dictionary_of_species_n_pdid[ref_assembly][species].append(pdgp_id)
     return dictionary_of_species_n_pdid 
 
-def get_output_paths(dictionary_of_species_n_pdid):
+def get_output_paths(dictionary_of_species_n_pdid, command):
     out_paths = []
     for ref_assembly in dictionary_of_species_n_pdid:
         if ref_assembly != 'unknown' and ref_assembly in ref_list:
         #print(ref_assembly)
             for species in dictionary_of_species_n_pdid[ref_assembly]:
                 #print(ref_assembly,species)
-                out_paths.extend([
-                        f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_only.bcf.gz"
-                        for species in dictionary_of_species_n_pdid[ref_assembly]
-                    ])
+                if command=='bcfs':
+                    out_paths.extend([
+                            f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_only.bcf.gz"
+                            for species in dictionary_of_species_n_pdid[ref_assembly]
+                        ])
+                elif command=='csi':
+                    out_paths.extend([
+                                f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_only.bcf.gz.csi"
+                                for species in dictionary_of_species_n_pdid[ref_assembly]
+                            ])
+                elif command=='without_par':
+                    out_paths.extend([
+                            f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/nonpar/{species}_nonpar.bcf.gz"
+                            for species in dictionary_of_species_n_pdid[ref_assembly]
+                        ])
+                elif command=='with_par':
+                    out_paths.extend([
+                            f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/par/{species}_par.bcf.gz"
+                            for species in dictionary_of_species_n_pdid[ref_assembly]
+                        ])
     return out_paths
 
 
@@ -44,7 +61,10 @@ dictionary_of_inds = generatedictionary(input_file)
 
 rule all:
     input:
-        expand(get_output_paths(dictionary_of_inds), ref_assembly=ref_list)
+        expand(get_output_paths(dictionary_of_inds, command='bcfs'), ref_assembly=ref_list),
+        expand(get_output_paths(dictionary_of_inds, command='csi'), ref_assembly=ref_list),
+        expand(get_output_paths(dictionary_of_inds, command='without_par'), ref_assembly=ref_list),
+        expand(get_output_paths(dictionary_of_inds, command='with_par'), ref_assembly=ref_list)
 
 rule species_specific_bcfs:
     input:
@@ -60,5 +80,50 @@ rule species_specific_bcfs:
     shell:
         """
         python3.10 /home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/species_specific_bcfs/isolation_file.py {params.ref} {params.speciesname} {output.isolation_file}
-        bcftools view -O b -S {output.isolation_file} {input.bcfs} > {output.species_specific}
+        bcftools view -S {output.isolation_file} {input.bcfs} -O b -o {output.species_specific}
+        
         """
+
+rule index_bcfs:
+    input:
+        bcfs = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_only.bcf.gz"
+    output:
+        tabix = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_only.bcf.gz.csi"
+    conda:
+        'envs/bcftools.yaml'
+    shell:
+        """
+        bcftools index {input.bcfs}
+        """
+
+rule bcf_without_par:
+    input:
+        bcfs = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_only.bcf.gz'
+    output:
+        nonPAR_region = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/nonpar/{species}_nonpar.bcf.gz",
+    params:
+        chromosome = 'chrX',
+        PAR_start = 2816500 #END Of XG gene in hg38
+    conda:
+        'envs/bcftools.yaml'
+    shell:
+        """
+        bcftools view -t ^{params.chromosome}:1-{params.PAR_start} -O b {input.bcfs} > {output.nonPAR_region}
+        """
+
+
+rule bcf_with_par:
+    input:
+        bcfs = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_only.bcf.gz'
+    output:
+        PAR_region = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/par/{species}_par.bcf.gz",
+    params:
+        chromosome = 'chrX',
+        PAR_start = 2816500 #END Of XG gene in hg38
+    conda:
+        'envs/bcftools.yaml'
+    shell:
+        """
+        bcftools view -t {params.chromosome}:1-{params.PAR_start} -O b {input.bcfs} > {output.PAR_region}
+        """
+

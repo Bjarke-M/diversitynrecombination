@@ -3,3 +3,6 @@ channels:
   - conda-forge
 dependencies:
   - bcftools=1.18
+  - htslib=1.18
+  - libdeflate=1.18
+  - tabix=1.11

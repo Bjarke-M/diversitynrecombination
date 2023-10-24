@@ -43,11 +43,12 @@ def get_output_paths(dictionary_of_species_n_pdid, window_list, command):
 #                 'Pongo_abelii','Cercocebus_atys','Galago_moholi','Nomascus_leucogenys','Colobus_guereza',
 #                 'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
 #                 'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
-ref_list = ['Saguinus_midas']
+ref_list = ['Daubentonia_madagascariensis']
 #Missing g.vcf.gz species: Theropithecus_gelada
 #Missing chainfiles: Carlito_syrichta Propithecus_coquereli'
 input_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/PDGP_metadata.txt'
-list_of_windows = [1000, 5000, 10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
+#list_of_windows = [1000, 5000, 10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
+list_of_windows = [5000]
 dictionary_of_inds=generatedictionary(input_file)
 
 
@@ -55,50 +56,62 @@ rule all:
     input:
         expand(get_output_paths(dictionary_of_inds, list_of_windows, 'windowpi'), ref_assembly=ref_list),
         expand(get_output_paths(dictionary_of_inds, list_of_windows, 'windowbed'), ref_assembly=ref_list),
-        expand(get_output_paths(dictionary_of_inds, list_of_windows, 'maskcov'), ref_assembly=ref_list)
+        #expand(get_output_paths(dictionary_of_inds, list_of_windows, 'maskcov'), ref_assembly=ref_list)
 
 rule windowed_pi_for_each_species:
     input:
-        bcf = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_only.bcf.gz"
+        nonpar = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/nonpar/{species}_nonpar.bcf.gz",
+        par = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/par/{species}_par.bcf.gz",
     output:
-        windowed_pi = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/{species}_{window_size}.windowed.pi"
+        windowed_pi = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/{species}_{window_size}.windowed.pi",
+        windowed_pi_par = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/par/{species}_{window_size}_par.windowed.pi"
     params:
         window = "{window_size}",
-        prefix = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/{species}_{window_size}"
+        prefix = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/{species}_{window_size}",
+        prefix_par = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/par/{species}_{window_size}_par"
     log:
-        '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/pi_estimation/windowed_pi/{ref_assembly}/{species}_{window_size}.log'
+        nonpar='/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/pi_estimation/windowed_pi/log/{ref_assembly}/{species}_{window_size}.log',
+        par='/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/pi_estimation/windowed_pi/log/{ref_assembly}/{species}_{window_size}_par.log'
     conda:
         'envs/vcftools.yaml'
     shell:
         """
-        vcftools --bcf {input.bcf} --window-pi {params.window} --out {params.prefix} 2> {log}
+        vcftools --bcf {input.nonpar} --window-pi {params.window} --out {params.prefix} 2> {log.nonpar}
+        vcftools --bcf {input.par} --window-pi {params.window} --out {params.prefix_par} 2> {log.par}
         """
 
 rule make_window_file:
     input:
-        window_pi = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/{species}_{window_size}.windowed.pi"
+        window_pi = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/{species}_{window_size}.windowed.pi",
+        window_par = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/par/{species}_{window_size}_par.windowed.pi"
     output:
-        window_bed = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/{species}_{window_size}.bed"
+        window_bed = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/{species}_{window_size}.bed",
+        window_bed_par = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/par/{species}_{window_size}_par.bed"
     shell:
         """
         #get the start end and chr and make bed file maybe
         awk 'NR > 1 {{print $1 "\t" $2 "\t" $3}}' {input.window_pi} > {output.window_bed}
+        awk 'NR > 1 {{print $1 "\t" $2 "\t" $3}}' {input.window_par} > {output.window_bed_par}
         """
 
-rule intersect_callable:
-    input:
-        window_file = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/{species}_{window_size}.bed",        
-        callable_vcf = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{pd_id}/{pd_id}_lifted_sorted.bed'
-    output:
-        outfile = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/{pd_id}/txt/{pd_id}_coverage_{window_size}.txt'
-    conda:
-        'envs/bedtools.yaml'
-    log:
-        '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/mask/{ref_assembly}/{species}/{pd_id}/txt/{pd_id}_coverage_{window_size}.log'
-    shell:
-        '''
-        bedtools intersect -a {input.window_file} -b {input.callable_vcf} -wo > {output.outfile} 2> {log}
-        '''
+# rule intersect_callable:
+#     input:
+#         window_file = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/{species}_{window_size}.bed",        
+#         callable_vcf = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{pd_id}/{pd_id}_lifted_sorted.bed',
+#         window_file_par = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/par/{species}_{window_size}_par.bed"
+#     output:
+#         outfile = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/{pd_id}/txt/{pd_id}_coverage_{window_size}.txt',
+#         outfile_par = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/par/{pd_id}/txt/{pd_id}_coverage_{window_size}_par.txt'
+#     conda:
+#         'envs/bedtools.yaml'
+#     log:
+#         nonpar = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/mask/{ref_assembly}/{species}/{pd_id}/txt/log/{pd_id}_coverage_{window_size}.log',
+#         par = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/mask/{ref_assembly}/{species}/par/{pd_id}/txt/log/{pd_id}_coverage_{window_size}_par.log'
+#     shell:
+#         '''
+#         bedtools intersect -a {input.window_file} -b {input.callable_vcf} -wo > {output.outfile} 2> {log.nonpar}
+#         bedtools intersect -a {input.window_file_par} -b {input.callable_vcf} -wo > {output.outfile_par} 2> {log.par}
+#         '''
 
 ## NOTE: extract PAR regions from the callable vcf file, maybe i shoudl delete the par region from the bcf.gz file and then make a file only with the par regions and run the window pi seperately..
 ## maybe bcf view can be used in a way..?? look into this it might be easier
