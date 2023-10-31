@@ -54,6 +54,11 @@ def get_output_paths(dictionary_of_species_n_pdid, command):
                             f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/par/{species}_par.bcf.gz"
                             for species in dictionary_of_species_n_pdid[ref_assembly]
                         ])
+                elif command=='remove_x':
+                    out_paths.extend([
+                        f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/male_no_x/{species}_only.bcf.gz'
+                        for species in dictionary_of_species_n_pdid[ref_assembly]
+                    ])
     return out_paths
 
 
@@ -64,7 +69,8 @@ rule all:
         expand(get_output_paths(dictionary_of_inds, command='bcfs'), ref_assembly=ref_list),
         expand(get_output_paths(dictionary_of_inds, command='csi'), ref_assembly=ref_list),
         expand(get_output_paths(dictionary_of_inds, command='without_par'), ref_assembly=ref_list),
-        expand(get_output_paths(dictionary_of_inds, command='with_par'), ref_assembly=ref_list)
+        expand(get_output_paths(dictionary_of_inds, command='with_par'), ref_assembly=ref_list),
+        expand(get_output_paths(dictionary_of_inds, command='remove_x'), ref_assembly=ref_list)
 
 rule species_specific_bcfs:
     input:
@@ -127,3 +133,33 @@ rule bcf_with_par:
         bcftools view -t {params.chromosome}:1-{params.PAR_start} -O b {input.bcfs} > {output.PAR_region}
         """
 
+rule remove_male_X:
+    input:
+        bcfs = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_only.bcf.gz'
+    output:
+        species_specific = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/male_no_x/{species}_only.bcf.gz',
+        species_specific_cis = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/male_no_x/{species}_only.bcf.gz.csi',
+        sex_isolation_file = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/male_{species}_isolation.txt"
+    params:
+        ref = lambda wildcards: wildcards.ref_assembly,
+        speciesname = lambda wildcards: wildcards.species,
+    conda:
+        'envs/bcftools.yaml'
+    shell:
+        """
+        python3.10 /home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/species_specific_bcfs/male_isoloation_file.py {params.ref} {params.speciesname} {output.sex_isolation_file}
+        bcftools view -S ^{output.sex_isolation_file} {input.bcfs} -O b > {params.speciesname}_without_males
+        bcftools index {params.speciesname}_without_males
+        bcftools view -S {output.sex_isolation_file} {input.bcfs} -Ou | bcftools view -t ^chrX -O b > {params.speciesname}_only_males_no_X 
+        bcftools index {params.speciesname}_only_males_no_X
+        bcftools merge {params.speciesname}_without_males {params.speciesname}_only_males_no_X -O b > {output.species_specific}
+        bcftools index {output.species_specific}
+        """
+
+        # python3.10 /home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/species_specific_bcfs/male_isoloation_file.py {params.ref} {params.speciesname} {output.sex_isolation_file}
+        # bcftools view -S ^{output.sex_isolation_file} {input.bcfs} -Ou -o {output.species_specific}_without_males
+        # bcftools view -S {output.sex_isolation_file} {input.bcfs} -Ou | bcftools view -t ^chrX -Ou -o {output.species_specific}_only_males_no_X
+        # bcftools merge {output.species_specific}_without_males {output.species_specific}_only_males_no_X -O b -o {output.species_specific}
+        # rm {output.species_specific}_only_males
+        # rm {output.species_specific}_only_males_no_X
+# scripts/workflows/species_specific_bcfs/madagascariensis_only_males_no_X
