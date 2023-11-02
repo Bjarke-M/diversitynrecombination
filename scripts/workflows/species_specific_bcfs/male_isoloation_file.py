@@ -12,23 +12,29 @@ def generatedictionary(input):
             if not ref_assembly:  # Check if ref_assembly is empty
                 ref_assembly = 'unknown'
             # Add the pdgp_id to the appropriate category in the dictionary
-            if species not in dictionary_of_species_n_pdid:
-                dictionary_of_species_n_pdid[species] = {sex: [pdgp_id]}
-            elif sex not in dictionary_of_species_n_pdid[species]:
-                dictionary_of_species_n_pdid[species][sex] = [pdgp_id]
+            elif ref_assembly not in dictionary_of_species_n_pdid:
+                dictionary_of_species_n_pdid[ref_assembly]={species:{sex:[pdgp_id]}}
+            elif species not in dictionary_of_species_n_pdid[ref_assembly]:
+                dictionary_of_species_n_pdid[ref_assembly][species] = {sex: [pdgp_id]}
+            elif sex not in dictionary_of_species_n_pdid[ref_assembly][species]:
+                dictionary_of_species_n_pdid[ref_assembly][species][sex] = [pdgp_id]
             else:
-                dictionary_of_species_n_pdid[species][sex].append(pdgp_id)
+                dictionary_of_species_n_pdid[ref_assembly][species][sex].append(pdgp_id)
     return dictionary_of_species_n_pdid 
 
 
 dictionary_of_inds = generatedictionary(input_file)
 
-
+#print(dictionary_of_inds)
 def get_pd_ids_from_species(dictionary_of_species_n_pdid, ref_assembly, species, outfile):
-    result = '\n'.join(dictionary_of_species_n_pdid[species]['M'])
+    try:
+        result = '\n'.join(dictionary_of_species_n_pdid[ref_assembly][species]['M'])
+    except KeyError:
+        result = ''
     with open(outfile, 'w') as file:
         file.write(result)
     return result  
+
 
 
 ref = sys.argv[1]
