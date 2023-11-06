@@ -1,10 +1,10 @@
-# ref_list = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops','Rhinopithecus_roxellana',
-#                 'Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
-#                 'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
-#                 'Pongo_abelii','Cercocebus_atys','Galago_moholi','Nomascus_leucogenys','Colobus_guereza',
-#                 'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
-#                 'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
-ref_list = ['Pongo_abelii']
+ref_list = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops','Rhinopithecus_roxellana',
+                'Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
+                'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
+                'Pongo_abelii','Cercocebus_atys','Galago_moholi','Nomascus_leucogenys','Colobus_guereza',
+                'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
+                'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
+
 
 #Missing g.vcf.gz species: Theropithecus_gelada
 #Missing chainfiles: Carlito_syrichta Propithecus_coquereli'
@@ -36,14 +36,9 @@ def get_output_paths(dictionary_of_species_n_pdid, command):
                 #print(ref_assembly,species)
                 if command=='bcfs':
                     out_paths.extend([
-                            f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/{species}_only.bcf.gz"
+                            f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/original/{species}_only.bcf.gz"
                             for species in dictionary_of_species_n_pdid[ref_assembly]
                         ])
-                elif command=='csi':
-                    out_paths.extend([
-                                f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/{species}_only.bcf.gz.csi"
-                                for species in dictionary_of_species_n_pdid[ref_assembly]
-                            ])
                 elif command=='without_par':
                     out_paths.extend([
                             f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/{species}_nonpar.bcf.gz"
@@ -56,7 +51,7 @@ def get_output_paths(dictionary_of_species_n_pdid, command):
                         ])
                 elif command=='extract_males':
                     out_paths.extend([
-                        f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/males/male_{species}_isolation.txt"
+                        f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/males_no_x/male_{species}_isolation.txt"
                         for species in dictionary_of_species_n_pdid[ref_assembly]
                     ])
                 elif command=='split_sexes':
@@ -77,7 +72,6 @@ dictionary_of_inds = generatedictionary(input_file)
 rule all:
     input:
         expand(get_output_paths(dictionary_of_inds, command='bcfs'), ref_assembly=ref_list),
-        expand(get_output_paths(dictionary_of_inds, command='csi'), ref_assembly=ref_list),
         expand(get_output_paths(dictionary_of_inds, command='without_par'), ref_assembly=ref_list),
         expand(get_output_paths(dictionary_of_inds, command='with_par'), ref_assembly=ref_list),
         expand(get_output_paths(dictionary_of_inds, command='extract_males'), ref_assembly=ref_list),
@@ -88,35 +82,28 @@ rule species_specific_bcfs: #creates species specific bcfs, by extracting the sp
     input:
         bcfs = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{ref_assembly}/bcfs/{ref_assembly}_lifted.bcf.gz'
     output:
-        species_specific = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/{species}_only.bcf.gz",
-        isolation_file = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/{species}_isolation.txt"
+        species_specific = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/original/{species}_only.bcf.gz",
+        isolation_file = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/{species}_isolation.txt",
+        csi = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/original/{species}_only.bcf.gz.csi"
     params:
-        ref = lambda wildcards: wildcards.ref_assembly,
-        speciesname = lambda wildcards: wildcards.species,
+        ref = "{ref_assembly}",
+        speciesname = lambda wildcards: wildcards.species
+    resources:
+        runtime= 600, #in minutes
+        mem_mb= 16000 #in megabytes
     conda:
         'envs/bcftools.yaml'
     shell:
         """
         python3.10 /home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/species_specific_bcfs/isolation_file.py {params.ref} {params.speciesname} {output.isolation_file}
         bcftools view -S {output.isolation_file} {input.bcfs} -O b -o {output.species_specific}
-        
+        bcftools index {output.species_specific}
         """
 
-rule index_bcfs: #indexes the species specific bcfs
-    input:
-        bcfs = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/{species}_only.bcf.gz"
-    output:
-        tabix = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/{species}_only.bcf.gz.csi"
-    conda:
-        'envs/bcftools.yaml'
-    shell:
-        """
-        bcftools index {input.bcfs}
-        """
 
 rule bcf_without_par:  #removes the PAR region from the species specific bcfs 
     input:
-        bcfs = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/{species}_only.bcf.gz'
+        bcfs = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/original/{species}_only.bcf.gz"
     output:
         nonPAR_region = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/{species}_nonpar.bcf.gz",
     params:
@@ -124,6 +111,9 @@ rule bcf_without_par:  #removes the PAR region from the species specific bcfs
         PAR_start = 2816500 #END Of XG gene in hg38
     conda:
         'envs/bcftools.yaml'
+    resources:
+        runtime= 600, #in minutes
+        mem_mb= 16000 #in megabytes
     shell:
         """
         bcftools view -t ^{params.chromosome}:1-{params.PAR_start} -O b {input.bcfs} > {output.nonPAR_region}
@@ -133,7 +123,7 @@ rule bcf_without_par:  #removes the PAR region from the species specific bcfs
 
 rule bcf_with_par: # makes a bcf with only the PAR region of all individuals 
     input:
-        bcfs = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/{species}_only.bcf.gz'
+        bcfs = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/original/{species}_only.bcf.gz"
     output:
         PAR_region = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/par/{species}_par.bcf.gz",
     params:
@@ -141,6 +131,9 @@ rule bcf_with_par: # makes a bcf with only the PAR region of all individuals
         PAR_start = 2816500 #END Of XG gene in hg38
     conda:
         'envs/bcftools.yaml'
+    resources:
+        runtime= 600, #in minutes
+        mem_mb= 16000 #in megabytes
     shell:
         """
         bcftools view -t {params.chromosome}:1-{params.PAR_start} -O b {input.bcfs} > {output.PAR_region}
@@ -149,10 +142,13 @@ rule bcf_with_par: # makes a bcf with only the PAR region of all individuals
 
 rule extract_males: #to remove any false calls of heterozygosity from the male X chr to ensure the pi estimation to be correct, this creates a list of the males in the species
     output:
-        sex_isolation_file = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/males/male_{species}_isolation.txt"
+        sex_isolation_file = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/males_no_x/male_{species}_isolation.txt"
     params:
         ref = lambda wildcards: wildcards.ref_assembly,
         speciesname = lambda wildcards: wildcards.species
+    resources:
+        runtime= 10, #in minutes
+        mem_mb= 1000 #in megabytes
     shell:
         """
         python3.10 /home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/species_specific_bcfs/male_isoloation_file.py {params.ref} {params.speciesname} {output.sex_isolation_file}
@@ -161,12 +157,15 @@ rule extract_males: #to remove any false calls of heterozygosity from the male X
 rule split_sexes_remove_male_X: # uses the txt file from above to remove the males from the species specific bcfs 
     input:
         bcfs = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/{species}_nonpar.bcf.gz",
-        sex_isolation_file = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/males/male_{species}_isolation.txt"
+        sex_isolation_file = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/males_no_x/male_{species}_isolation.txt"
     output:
         females = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/females/{species}.bcf.gz",
         males = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/males_no_x/{species}.bcf.gz"
     conda:
         'envs/bcftools.yaml'
+    resources:
+        runtime= 600, #in minutes
+        mem_mb= 16000 #in megabytes
     shell:
         """
         bcftools view -S ^{input.sex_isolation_file} {input.bcfs} -O b > {output.females}
@@ -184,6 +183,9 @@ rule merge_sexes: #merge the females with the males without the X chr into one f
         merged="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/merged_non_male_X/{species}.bcf.gz"
     conda: 
         'envs/bcftools.yaml'
+    resources:
+        runtime= 800, #in minutes
+        mem_mb= 32000 #in megabytes
     shell:
         """
         bcftools merge {input.females} {input.males} -O b > {output.merged}

@@ -26,10 +26,10 @@ def get_output_paths(dictionary_of_species_n_pdid, window_list, command):
             for species in dictionary_of_species_n_pdid[ref_assembly]:
                 if command=='windowpi':
                     for window_size in window_list:
-                        out_paths.append(f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/{species}_{window_size}.windowed.pi")
+                        out_paths.append(f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/nonpar/{species}_{window_size}.windowed.pi")
                 elif command=='windowbed':
                     for window_size in window_list:
-                        out_paths.append(f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/{species}_{window_size}.bed")
+                        out_paths.append(f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/nonpar/{species}_{window_size}.bed")
                 elif command=='maskcov':
                     for window_size in window_list:
                         for pd_id in dictionary_of_species_n_pdid[ref_assembly][species]:
@@ -47,8 +47,8 @@ ref_list = ['Daubentonia_madagascariensis']
 #Missing g.vcf.gz species: Theropithecus_gelada
 #Missing chainfiles: Carlito_syrichta Propithecus_coquereli'
 input_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/PDGP_metadata.txt'
-#list_of_windows = [1000, 5000, 10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
-list_of_windows = [5000]
+list_of_windows = [1000, 5000, 10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
+#list_of_windows = [5000]
 dictionary_of_inds=generatedictionary(input_file)
 
 
@@ -60,14 +60,14 @@ rule all:
 
 rule windowed_pi_for_each_species:
     input:
-        nonpar = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/nonpar/{species}_nonpar.bcf.gz",
-        par = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/par/{species}_par.bcf.gz",
+        nonpar = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/merged_non_male_X/{species}.bcf.gz",
+        par = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/par/{species}_par.bcf.gz"
     output:
-        windowed_pi = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/{species}_{window_size}.windowed.pi",
+        windowed_pi = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/nonpar/{species}_{window_size}.windowed.pi",
         windowed_pi_par = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/par/{species}_{window_size}_par.windowed.pi"
     params:
         window = "{window_size}",
-        prefix = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/{species}_{window_size}",
+        prefix = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/nonpar/{species}_{window_size}",
         prefix_par = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/par/{species}_{window_size}_par"
     log:
         nonpar='/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/pi_estimation/windowed_pi/log/{ref_assembly}/{species}_{window_size}.log',
@@ -82,10 +82,10 @@ rule windowed_pi_for_each_species:
 
 rule make_window_file:
     input:
-        window_pi = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/{species}_{window_size}.windowed.pi",
+        window_pi = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/nonpar/{species}_{window_size}.windowed.pi",
         window_par = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/windowed_pi/{ref_assembly}/{species}/par/{species}_{window_size}_par.windowed.pi"
     output:
-        window_bed = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/{species}_{window_size}.bed",
+        window_bed = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/nonpar/{species}_{window_size}.bed",
         window_bed_par = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/par/{species}_{window_size}_par.bed"
     shell:
         """
