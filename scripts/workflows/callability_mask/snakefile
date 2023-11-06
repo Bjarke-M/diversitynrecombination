@@ -111,3 +111,49 @@ rule sort_lifted:
         """
         sort -k1,1 -k2,2n {input.input_bed} > {output.bed}
         """
+
+
+# rule intersect_callable:
+#     input:
+#         window_file = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/{species}_{window_size}.bed",        
+#         callable_vcf = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{pd_id}/{pd_id}_lifted_sorted.bed',
+#         window_file_par = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/par/{species}_{window_size}_par.bed"
+#     output:
+#         outfile = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/{pd_id}/txt/{pd_id}_coverage_{window_size}.txt',
+#         outfile_par = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/par/{pd_id}/txt/{pd_id}_coverage_{window_size}_par.txt'
+#     conda:
+#         'envs/bedtools.yaml'
+#     log:
+#         nonpar = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/mask/{ref_assembly}/{species}/{pd_id}/txt/log/{pd_id}_coverage_{window_size}.log',
+#         par = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/mask/{ref_assembly}/{species}/par/{pd_id}/txt/log/{pd_id}_coverage_{window_size}_par.log'
+#     shell:
+#         '''
+#         bedtools intersect -a {input.window_file} -b {input.callable_vcf} -wo > {output.outfile} 2> {log.nonpar}
+#         bedtools intersect -a {input.window_file_par} -b {input.callable_vcf} -wo > {output.outfile_par} 2> {log.par}
+#         '''
+
+## NOTE: extract PAR regions from the callable vcf file, maybe i shoudl delete the par region from the bcf.gz file and then make a file only with the par regions and run the window pi seperately..
+## maybe bcf view can be used in a way..?? look into this it might be easier
+
+# rule calculate_coverage:
+#     input:
+#         ind_isolation_files = /home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}_isolation.txt
+#     output:
+#         masked_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/{pd_id}/csv/{pd_id}_masked_{window_size}.csv'
+#     params:
+#         window_size = "{window_size}",
+#         pd_id = "{pd_id}",
+#         sex = lambda wildcards: get_sex(wildcards.pd_id)
+#     conda:
+#         'envs/maskfile.yaml'
+#     script: '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/calculate_win_based_coverage/maskfile.R'
+
+# rule get_average_cov:
+#     input:
+#           expand
+#         #isolation_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/{pd_id}/csv/{pd_id}_masked_{window_size}.csv'
+#     output:
+#         average_cov = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask_cov/{ref_assembly}/{species}_window_mask_cov.csv"
+#     shell:
+#         """
+#         #get the average coverage for each species per window
