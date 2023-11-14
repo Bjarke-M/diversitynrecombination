@@ -1,18 +1,22 @@
 #this script calcualtes the coverage in windows of a given sizes
 input_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/PDGP_metadata.txt'
-dictionary_of_inds = {}
-with open(input_file, 'r') as file:
-    header = next(file)  # Read and skip the header line
-    for line in file:
-        fields = line.strip().split(',')
-        pdgp_id, genus, species, froh, sex, ref_assembly = fields
-        if not ref_assembly:  # Check if ref_assembly is empty
-            ref_assembly = 'unknown'
-        # Add the pdgp_id to the appropriate category in the dictionary
-        if ref_assembly not in dictionary_of_inds:
-            dictionary_of_inds[ref_assembly] = [pdgp_id]
-        else:
-            dictionary_of_inds[ref_assembly].append(pdgp_id)
+def generatedictionary(input):
+    dictionary_of_species_n_pdid = {}
+    with open(input_file, 'r') as file:
+        header = next(file)  # Read and skip the header line
+        for line in file:
+            fields = line.strip().split(',')
+            pdgp_id, genus, species, froh, sex, ref_assembly = fields
+            if not ref_assembly:  # Check if ref_assembly is empty
+                ref_assembly = 'unknown'
+            # Add the pdgp_id to the appropriate category in the dictionary
+            if ref_assembly not in dictionary_of_species_n_pdid:
+                dictionary_of_species_n_pdid[ref_assembly] = {species: [pdgp_id]}
+            elif species not in dictionary_of_species_n_pdid[ref_assembly]:
+                dictionary_of_species_n_pdid[ref_assembly][species] = [pdgp_id]
+            else:
+                dictionary_of_species_n_pdid[ref_assembly][species].append(pdgp_id)
+    return dictionary_of_species_n_pdid 
 
 dictionary_of_sex = {}
 with open(input_file, 'r') as file:
@@ -27,29 +31,21 @@ with open(input_file, 'r') as file:
 def get_sex(pd_id):
     return dictionary_of_sex[pd_id]
 
-
 # Define a Python function to generate the expand statement
-def generate_input_paths(species_list, window_size, path=1):
+def generate_input_paths(species_list, window_size, command=None):
     input_paths = []
-    for species in species_list:
-        for pd_id in dictionary_of_inds.get(species, []):
-            for window_size in window_list:
-                if path==1:
-                    input_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pd_id}/plots/{window_size}_coverage.pdf')
-                elif path==2:
-                    input_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pd_id}/txt/{pd_id}_coverage_{window_size}.txt')
-                elif path==3:
-                    input_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pd_id}/csv/{pd_id}_masked_{window_size}.csv')
-                elif path==4:
-                    input_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pd_id}/{pd_id}_lifted_sorted_par.bed')
+    for ref_assembly in species_list:
+        for species in dictionary_of_inds[ref_assembly]:
+            for pd_id in dictionary_of_inds[ref_assembly][species]:
+                for window_size in window_list:
+                    if command=='intersect':
+                        input_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/{pd_id}/nonpar/txt/{pd_id}_coverage_{window_size}.txt')
+                    elif command=='mask':
+                        input_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/{pd_id}/nonpar/csv/{pd_id}_masked_{window_size}.csv')
     return input_paths
   
 
-# ## MAKE WINDOW BEDS ##
-
-window_list = [1000, 5000, 10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
-
-species_list = ['Daubentonia_madagascariensis']
+species_list = ['Pongo_abelii']
 # species_list = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops',
 #                 'Rhinopithecus_roxellana','Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
 #                 'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
@@ -59,95 +55,43 @@ species_list = ['Daubentonia_madagascariensis']
 #Missing g.vcf.gz species: Theropithecus_gelada
 #Missing chainfiles: Carlito_syrichta Propithecus_coquereli'
 
+dictionary_of_inds = generatedictionary(input_file)
+window_list = [1000000]
+#window_list = [1000, 5000, 10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
 
-# Modify the rule all to use species_list for both original and lifted BED files
-# Modify the rule all to use species_list for both original and lifted BED files
+
+
 rule all:
     input:
-        expand('/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/coverage/bed_original/{window_size}_window.bed', window_size = window_list),
-        expand(generate_input_paths(species_list, path=2, window_size=window_list)),
-        expand(generate_input_paths(species_list, path=1, window_size=window_list)),
-        expand(generate_input_paths(species_list, path=3, window_size=window_list)),
-        expand(generate_input_paths(species_list, path=4, window_size=window_list)),
-        expand('/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/coverage/par/{window_size}_window_par.bed', window_size = window_list)
-
-# rule generate_window_sized_beds:
-#     input:
-#         reference_genome = '/home/bjarkemp/primatediversity/data/chain_files_15_03_2022/hg38/hg38.fasta.fai'
-#     output:
-#         outfile = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/coverage/bed_original/{window_size}_window.bed'
-#     conda:
-#         'envs/bedtools.yaml'
-#     log:
-#         '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/calculate_win_based_coverage/logs/{window_size}_generate_windows.log'
-#     shell:
-#         '''
-#         bedtools makewindows -g {input.reference_genome} -w {wildcards.window_size} > {output}
-#         '''
+        expand(generate_input_paths(species_list, command='intersect', window_size=window_list)),
+        expand(generate_input_paths(species_list, command='mask', window_size=window_list)),
 
 
-
-# rule extract_par_region_in_window:
-#     input:
-#         file='/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/coverage/bed_original/{window_size}_window.bed'
-#     output:
-#         out='/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/coverage/par/{window_size}_window_par.bed'
-#     params:
-#         par_end = 2816500, #the end of the XG gene, which is thourght to lie on the border of the PAR
-#         chr_end = 156040895, #the end of the X chromosome
-#         window_size = "{window_size}"
-#     log:
-#         '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/calculate_win_based_coverage/logs/{window_size}_extract_par_region.log'
-#     shell:
-#         '''
-#         python3.10 /home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/calculate_win_based_coverage/extract_par_region.py {input.file} {output.out}_temp {params.window_size} {params.par_end} {params.chr_end}
-#         sort -k1,1 -k2,2n {output}_temp > {output}
-#         rm {output}_temp
-#         '''
-
-# rule rename_par_in_lifted_bed:
-#     input:
-#         callable_vcf = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pd_id}/{pd_id}_lifted_sorted.bed'
-#     output:
-#         outfile = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pd_id}/{pd_id}_lifted_sorted_par.bed'
-#     params:
-#         par_end = 2816500, #the end of the XG gene, which is thourght to lie on the border of the PAR
-#     log:
-#         '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/calculate_win_based_coverage/logs/{species}_{pd_id}_rename_par.log'
-#     shell:
-#         '''
-#         python3.10 /home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/calculate_win_based_coverage/rename_par.py {input.callable_vcf} {output.outfile}_temp {params.par_end}
-#         sort -k1,1 -k2,2n {output.outfile}_temp > {output.outfile}
-#         rm {output.outfile}_temp
-#         '''
-
-## CALCULATE COVERAGE ##
+## intersect callable and liftable parts ##
 rule intersect_windows:
     input:
-        window_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/{species}_{window_size}.bed',        
-        callable_vcf = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{pd_id}/{pd_id}_lifted_sorted_par.bed'
+        window_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/nonpar/{species}_{window_size}.bed',        
+        callable_vcf = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{pd_id}/{pd_id}_lifted_sorted.bed'
     output:
-        outfile = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/{pd_id}/txt/{pd_id}_coverage_{window_size}.txt'
+        outfile = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/{pd_id}/nonpar/txt/{pd_id}_coverage_{window_size}.txt'
     conda:
         'envs/bedtools.yaml'
-    log:
-        '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/calculate_win_based_coverage/logs/{window_size}_{species}_{pd_id}_calculate_coverage.log'
     shell:
         '''
         bedtools intersect -a {input.window_file} -b {input.callable_vcf} -wo > {output.outfile}
         '''
 
 
-
+## calculate coverage per individual ##
 rule maskfile:
     input:
-        coverage_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/{pd_id}/txt/{pd_id}_coverage_{window_size}.txt'
+        coverage_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/{pd_id}/nonpar/txt/{pd_id}_coverage_{window_size}.txt'
     output:
-        #masked_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pd_id}/csv/{pd_id}_masked_{window_size}.csv'
+        masked_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/{pd_id}/nonpar/csv/{pd_id}_masked_{window_size}.csv'
     params:
         window_size = "{window_size}",
         pd_id = "{pd_id}",
-        sex = lambda wildcards: get_sex(wildcards.pd_id)
+        sex = lambda wildcards: get_sex(wildcards.pd_id) #NA for coverrage if sex = male and chr = X as we dont want to make the mistake of including the male x coverage when we summarise for species
     conda:
         'envs/maskfile.yaml'
     script: '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/calculate_win_based_coverage/maskfile.R'

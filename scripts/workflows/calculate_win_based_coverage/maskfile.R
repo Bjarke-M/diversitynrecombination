@@ -7,7 +7,7 @@ generate_df <- function(inputfile, window_size, sex, outfile) {
     summarize(sum_n = sum(n)) %>%
     mutate(
       window_size = stopA - startA,
-      freq = ifelse(chrA == 'chrX' & sex == 'M', sum_n / (window_size / 2), sum_n / window_size) # make sure that we calculate the X chromosome correctly for the males in the data set.
+      freq = ifelse(chrA == 'chrX' & sex == 'M', NA, sum_n / window_size) # make sure that we calculate the X chromosome correctly for the males in the data set.
     ) %>%
     select(chrA, startA, stopA, window_size, sum_n, freq)
   

@@ -71,7 +71,7 @@ rule windowed_pi_for_each_species:
         'envs/vcftools.yaml'
     resources:
         mem_mb=16000, #memory in megabytes
-        runtime=60 #runtime in minutes
+        runtime=300 #runtime in minutes
     shell:
         """
         vcftools --bcf {input.nonpar} --window-pi {params.window} --out {params.prefix} 2> {log.nonpar}
@@ -87,7 +87,7 @@ rule make_window_file:
         window_bed_par = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/par/{species}_{window_size}_par.bed"
     resources:
         mem_mb=16000, #memory in megabytes
-        runtime=120 #runtime in minutes
+        runtime=200 #runtime in minutes
     shell:
         """
         #get the start end and chr and make bed file maybe
