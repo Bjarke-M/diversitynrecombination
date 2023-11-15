@@ -44,7 +44,7 @@ def calculate_relative_position(start, chr):
         cm_start *= (2/3)
     return cm_start
 
-print(calculate_relative_position(55600001, 'chrX'))
+
 
 
 def calculate_cm_per_mb_per_window(start, end, chr):
@@ -54,9 +54,9 @@ def calculate_cm_per_mb_per_window(start, end, chr):
     return cm_start, cm_end, cm_per_mb
 
 with open(output_file, 'w') as output:
+    output.write('chr\tstart\tend\tcm_start\tcm_end\tcm_per_mb\n')
     for chr, start, end in df.itertuples(index=False):
         cm_start, cm_end, cm_per_mb = calculate_cm_per_mb_per_window(start, end, chr)
         output_line = f'{chr}\t{start}\t{end}\t{cm_start}\t{cm_end}\t{cm_per_mb}\n'
         output.write(output_line)
-        print((cm_start, cm_end, cm_per_mb))
     output.close()

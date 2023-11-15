@@ -56,8 +56,8 @@ species_list = ['Pongo_abelii']
 #Missing chainfiles: Carlito_syrichta Propithecus_coquereli'
 
 dictionary_of_inds = generatedictionary(input_file)
-window_list = [1000000]
-#window_list = [1000, 5000, 10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
+#window_list = [1000000]
+window_list = [1000, 5000, 10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
 
 
 
