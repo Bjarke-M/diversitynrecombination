@@ -26,18 +26,17 @@ def get_output_paths(dictionary_of_species_n_pdid, window_list):
     return out_paths
 
 def specific_runtime(window_size):
-    #dictionary_of_runtimes = {1000: 1440, 5000: 1300, 10000: 1200, 50000: 220, 100000: 200, 500000: 80, 1000000: 60, 2000000: 60, 10000000: 60}
-    dictionary_of_runtimes = {'1000': 1440, '5000': 1300, '10000': 1200, '50000': 220, '100000': 200, '500000': 80, '1000000': 60, '2000000': 60, '10000000': 60}
+    dictionary_of_runtimes = {'1000': 4320, '5000': 2880, '10000': 1200, '50000': 220, '100000': 200, '500000': 80, '1000000': 60, '2000000': 45, '10000000': 30}
     return int(dictionary_of_runtimes[str(window_size)])
 
 ## LOAD DICTIONARY AND WINDOWLIST AND REFS 500000
-# ref_list = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops','Rhinopithecus_roxellana',
-#                 'Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
-#                 'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
-#                 'Pongo_abelii','Cercocebus_atys','Galago_moholi','Nomascus_leucogenys','Colobus_guereza',
-#                 'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
-#                 'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
-ref_list = ['Daubentonia_madagascariensis', 'Gorilla_gorilla_gorilla']
+ref_list = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops','Rhinopithecus_roxellana',
+                'Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
+                'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
+                'Pongo_abelii','Cercocebus_atys','Galago_moholi','Nomascus_leucogenys','Colobus_guereza',
+                'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
+                'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
+# ref_list = ['Daubentonia_madagascariensis', 'Gorilla_gorilla_gorilla']
 #Missing g.vcf.gz species: Theropithecus_gelada
 #Missing chainfiles: Carlito_syrichta Propithecus_coquereli'
 input_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/PDGP_metadata.txt'

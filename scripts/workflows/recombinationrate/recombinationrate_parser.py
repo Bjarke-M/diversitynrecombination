@@ -1,14 +1,21 @@
 import pandas as pd
 import numpy as np
 import sys
-#get a window file and an input file with recombination rates and calculate the average recombination rate in each window
-# file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/Cercopithecus_mitis/ascanius/nonpar/ascanius_100000.bed'
-#recomb_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/Recombination_map_decode_2019'
 
-# # get files from command line
+# if sys.argv:
+#     #get a window file and an input file with recombination rates and calculate the average recombination rate in each window
+#     file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/Cercopithecus_mitis/ascanius/nonpar/ascanius_100000.bed'
+#     recomb_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/Recombination_map_decode_2019'
+#     output_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/scanius/nonpar/ascanius_100000_recomb.bed'
+# else :
 file = sys.argv[1]
 recomb_file = sys.argv[2]
 output_file = sys.argv[3]
+
+# # get files from command line
+# file = sys.argv[1]
+# recomb_file = sys.argv[2]
+# output_file = sys.argv[3]
 
 #parse files to pandas dataframes
 recomb_file = pd.read_table(recomb_file, sep='\t', names=['chr', 'start', 'end', 'cmpermb', 'cm'])
@@ -38,10 +45,10 @@ def calculate_relative_position(start, chr):
     cm_per_bp = ((cm_next_end - cm_previous_end) / (next_end - previous_end)) # calculate the cm per bp
     bp_from_end_to_start = (start - previous_end) # calculate the number of bp from the previous end to the start of the window
     
-    cm_start = cm_previous_end + (cm_per_bp * bp_from_end_to_start)
+    cm_start = cm_previous_end + (cm_per_bp * bp_from_end_to_start) # calculate the cm value for the start of the window
     
     if chr == 'chrX':
-        cm_start *= (2/3)
+        cm_start *= (2/3) # if the chromosome is X, multiply the cm value by 2/3 to account for the fact that the X chromosome is only 2/3 the size of the autosomes    
     return cm_start
 
 
@@ -57,6 +64,6 @@ with open(output_file, 'w') as output:
     output.write('chr\tstart\tend\tcm_start\tcm_end\tcm_per_mb\n')
     for chr, start, end in df.itertuples(index=False):
         cm_start, cm_end, cm_per_mb = calculate_cm_per_mb_per_window(start, end, chr)
-        output_line = f'{chr}\t{start}\t{end}\t{cm_start}\t{cm_end}\t{cm_per_mb}\n'
-        output.write(output_line)
+        output.write(f'{chr}\t{start}\t{end}\t{cm_start}\t{cm_end}\t{cm_per_mb}\n')
+    
     output.close()

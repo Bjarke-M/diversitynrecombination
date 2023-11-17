@@ -96,6 +96,3 @@ rule maskfile:
         'envs/maskfile.yaml'
     script: '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/calculate_win_based_coverage/maskfile.R'
 
-# ## MAKE COVERAGE PLOTS ##
-
-#rule calculate_species_average:
