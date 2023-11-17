@@ -20,13 +20,34 @@ def generatedictionary(input):
     return dictionary_of_species_n_pdid 
 
 
-def generate_input_paths(species_list, window_list):
+def generate_output_paths(species_list, window_list):
     input_paths = []
     for ref_assembly in species_list:
         for species in dictionary_of_inds[ref_assembly]:
             for window_size in window_list:
                 input_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/callable_fraction/{ref_assembly}/{species}/{window_size}_callable_fraction.csv')
     return input_paths
+
+def generate_list_of_pds(species_list):
+    pd_list = {}
+    for ref_assembly in species_list:
+        for species in dictionary_of_inds[ref_assembly]:
+            for pd in dictionary_of_inds[ref_assembly][species]:
+                if ref_assembly not in pd_list:
+                    pd_list[ref_assembly] = [pd]
+                else:
+                    pd_list[ref_assembly].append(pd)
+    return pd_list
+
+def generate_input_paths(species_list, window_list):
+    input_paths = []
+    for ref_assembly in species_list:
+        for pd in pd_list[ref_assembly]:
+            for window_size in window_list:
+                input_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{pd}/csv/{pd}_masked_{window_size}.csv')
+    return input_paths
+
+
 
 dictionary_of_inds = generatedictionary(input_file)
 #window_list = [1000000]
@@ -40,14 +61,16 @@ species_list = ['Pongo_abelii']
 #                 'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
 #Missing g.vcf.gz species: Theropithecus_gelada
 #Missing chainfiles: Carlito_syrichta Propithecus_coquereli'
+pd_list= generate_list_of_pds(species_list)
 
 rule all:
     input:
-        expand(generate_input_paths(species_list, window_list=window_list))
+        expand(generate_output_paths(species_list, window_list=window_list))
 
 
 rule summarise_callable_fraction:
-    
+    input:
+        expand(generate_input_paths(species_list,window_list)) #checks wheter all files exist not just the specific window_size it will generate the output for in each iteration
     output:
         output='/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/callable_fraction/{ref_assembly}/{species}/{window_size}_callable_fraction.csv'
     params:
@@ -58,3 +81,16 @@ rule summarise_callable_fraction:
         '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/summarise_species/envs/pandas.yaml'
     script:
         '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/summarise_species/summarise_callable_fraction.py {params.ref_assembly} {params.species} {params.window_size}' 
+
+
+# rule combine_species:
+#     input:
+#         callable_fraction = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/callable_fraction/{ref_assembly}/{species}/{window_size}_callable_fraction.csv',
+#         pi_estimation = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/windowed_pi/{ref_assembly}/{species}/nonpar/{species}_{window_size}.windowed.pi'
+#     output:
+#         output='/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/combined/{ref_assembly}/{species}/{species}_{window_size}_combined.csv'
+#     conda:
+#         '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/summarise_species/envs/pandas.yaml'
+#     script:
+#         #some script
+# # this rule should combine the species sepcifik pi estimation and the callabla fraction for each species

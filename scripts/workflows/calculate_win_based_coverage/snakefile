@@ -45,13 +45,13 @@ def generate_input_paths(species_list, window_size, command=None):
     return input_paths
   
 
-species_list = ['Pongo_abelii']
-# species_list = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops',
-#                 'Rhinopithecus_roxellana','Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
-#                 'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
-#                 'Pongo_abelii','Cercocebus_atys','Galago_moholi','Nomascus_leucogenys','Colobus_guereza',
-#                 'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
-#                 'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
+#species_list = ['Pongo_abelii']
+species_list = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops',
+                'Rhinopithecus_roxellana','Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
+                'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
+                'Pongo_abelii','Cercocebus_atys','Galago_moholi','Nomascus_leucogenys','Colobus_guereza',
+                'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
+                'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
 #Missing g.vcf.gz species: Theropithecus_gelada
 #Missing chainfiles: Carlito_syrichta Propithecus_coquereli'
 
