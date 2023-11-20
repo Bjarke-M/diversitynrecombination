@@ -26,7 +26,7 @@ def get_output_paths(dictionary_of_species_n_pdid, window_list):
     return out_paths
 
 def specific_runtime(window_size):
-    dictionary_of_runtimes = {'1000': 4320, '5000': 2880, '10000': 1200, '50000': 220, '100000': 200, '500000': 80, '1000000': 60, '2000000': 45, '10000000': 30}
+    dictionary_of_runtimes = {'1000': 4920, '5000': 2880, '10000': 1200, '50000': 220, '100000': 200, '500000': 80, '1000000': 60, '2000000': 45, '10000000': 30}
     return int(dictionary_of_runtimes[str(window_size)])
 
 ## LOAD DICTIONARY AND WINDOWLIST AND REFS 500000
@@ -40,8 +40,8 @@ ref_list = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiop
 #Missing g.vcf.gz species: Theropithecus_gelada
 #Missing chainfiles: Carlito_syrichta Propithecus_coquereli'
 input_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/PDGP_metadata.txt'
-list_of_windows = [1000, 5000, 10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
-#list_of_windows = [10000000]
+#list_of_windows = [1000, 5000, 10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
+list_of_windows = [10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
 dictionary_of_inds=generatedictionary(input_file)
 
 rule all:
