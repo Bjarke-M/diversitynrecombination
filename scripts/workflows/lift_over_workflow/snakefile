@@ -9,7 +9,7 @@ species_names = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_ae
                  'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
                  'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
 #Missing g.vcf.gz species: Theropithecus_gelada
-#Missing chainfiles: Carlito_syrichta Propithecus_coquereli'
+#Missing chainfiles: Carlito_syrichta Propithecus_coquereli' Cebus_capucinus
 
 
 # Define the path where the species folders are located
