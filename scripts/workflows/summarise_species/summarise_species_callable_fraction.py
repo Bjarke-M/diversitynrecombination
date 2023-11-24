@@ -29,11 +29,10 @@ def gather_files(ref_assembly, species, window_size, dictionary_of_pds): # This 
     dictionary_of_files = {}
     for pd in dictionary_of_pds[ref_assembly][species]:
         if pd not in dictionary_of_files:
-            dictionary_of_files[pd] = f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{pd}/csv/{pd}_masked_{window_size}.csv'
+            dictionary_of_files[pd] = f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/{pd}/nonpar/csv/{pd}_masked_{window_size}.csv'
         else:
             'this is not working'
     return dictionary_of_files
-
 
 def load_in_datasets(files: Dict[str, str]) -> pd.DataFrame: # This function loads in the datasets
     dfs = []
@@ -44,7 +43,7 @@ def load_in_datasets(files: Dict[str, str]) -> pd.DataFrame: # This function loa
     return pd.concat(dfs)
 
 def summarise_df(df): # This function summarises the dataframe
-    grouped_df = df.groupby(["chrA", "startA", "stopA"])
+    grouped_df = df.groupby(["chr", "start", "end"])
     result_df = pd.DataFrame({
     'freq_mean': grouped_df['freq'].mean(), # This is to get the mean of the freq column
     'freq_min': grouped_df['freq'].min(), # This is to get the min of the freq column

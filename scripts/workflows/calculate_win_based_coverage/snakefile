@@ -45,13 +45,13 @@ def generate_input_paths(species_list, window_size, command=None):
     return input_paths
   
 
-#species_list = ['Pongo_abelii']
-species_list = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops',
-                'Rhinopithecus_roxellana','Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
-                'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
-                'Pongo_abelii','Cercocebus_atys','Galago_moholi','Nomascus_leucogenys','Colobus_guereza',
-                'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
-                'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
+species_list = ['Pongo_pygmaeus']
+# species_list = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops',
+#                 'Rhinopithecus_roxellana','Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
+#                 'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
+#                 'Pongo_abelii','Cercocebus_atys','Galago_moholi','Nomascus_leucogenys','Colobus_guereza',
+#                 'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
+#                 'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
 #Missing g.vcf.gz species: Theropithecus_gelada
 #Missing chainfiles: Carlito_syrichta Propithecus_coquereli'
 
@@ -76,6 +76,9 @@ rule intersect_windows:
         outfile = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/{pd_id}/nonpar/txt/{pd_id}_coverage_{window_size}.txt'
     conda:
         'envs/bedtools.yaml'
+    resources:
+        mem_mb=16000,
+        runtime=30
     shell:
         '''
         bedtools intersect -a {input.window_file} -b {input.callable_vcf} -wo > {output.outfile}
@@ -94,5 +97,8 @@ rule maskfile:
         sex = lambda wildcards: get_sex(wildcards.pd_id) #NA for coverrage if sex = male and chr = X as we dont want to make the mistake of including the male x coverage when we summarise for species
     conda:
         'envs/maskfile.yaml'
+    resources:
+        mem_mb=16000,
+        runtime=30
     script: '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/calculate_win_based_coverage/maskfile.R'
 

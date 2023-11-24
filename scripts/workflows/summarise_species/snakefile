@@ -42,17 +42,16 @@ def generate_list_of_pds(species_list):
 def generate_input_paths(species_list, window_list):
     input_paths = []
     for ref_assembly in species_list:
-        for pd in pd_list[ref_assembly]:
-            for window_size in window_list:
-                input_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{pd}/csv/{pd}_masked_{window_size}.csv')
+        for species in dictionary_of_inds[ref_assembly]:
+            for pd in pd_list[ref_assembly]:
+                for window_size in window_list:
+                    input_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/{pd}/nonpar/csv/{pd}_masked_{window_size}.csv')
     return input_paths
 
-
-
 dictionary_of_inds = generatedictionary(input_file)
-#window_list = [1000000]
-window_list = [1000, 5000, 10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
-species_list = ['Pongo_abelii']
+window_list = [500000]
+#window_list = [1000, 5000, 10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
+species_list = ['Pongo_pygmaeus']
 # species_list = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops',
 #                 'Rhinopithecus_roxellana','Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
 #                 'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
@@ -78,9 +77,11 @@ rule summarise_callable_fraction:
         species='{species}',
         window_size='{window_size}'
     conda:
-        '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/summarise_species/envs/pandas.yaml'
-    script:
-        '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/summarise_species/summarise_callable_fraction.py {params.ref_assembly} {params.species} {params.window_size}' 
+        'envs/pandas.yaml'
+    shell:
+        '''
+        python /home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/summarise_species/summarise_species_callable_fraction.py {params.ref_assembly} {params.species} {params.window_size} {output}
+        ''' 
 
 
 # rule combine_species:
