@@ -20,13 +20,17 @@ def generatedictionary(input):
     return dictionary_of_species_n_pdid 
 
 
-def generate_output_paths(species_list, window_list):
+def generate_output_paths(species_list, window_list, command):
     input_paths = []
     for ref_assembly in species_list:
         for species in dictionary_of_inds[ref_assembly]:
             for window_size in window_list:
-                input_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/callable_fraction/{ref_assembly}/{species}/{window_size}_callable_fraction.csv')
+                if command=='callable_fraction':
+                    input_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/callable_fraction/{ref_assembly}/{species}/{window_size}_callable_fraction.csv')
+                elif command=='pi':
+                    input_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/combined/{ref_assembly}/{ref_assembly}_{window_size}_combined.csv')
     return input_paths
+
 
 def generate_list_of_pds(species_list):
     pd_list = {}
@@ -39,59 +43,88 @@ def generate_list_of_pds(species_list):
                     pd_list[ref_assembly].append(pd)
     return pd_list
 
-def generate_input_paths(species_list, window_list):
+def generate_input_paths(species_list, window_list): #change to window size and not the list, so it only checks the specific window size it will generate the output for in each iteration
     input_paths = []
     for ref_assembly in species_list:
         for species in dictionary_of_inds[ref_assembly]:
-            for pd in pd_list[ref_assembly]:
+            for pd in dictionary_of_inds[ref_assembly][species]:
                 for window_size in window_list:
                     input_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/{pd}/nonpar/csv/{pd}_masked_{window_size}.csv')
     return input_paths
 
+def check_pi_files_for_combine_species(wildcards):
+    input_paths = []
+    ref_assembly = wildcards.ref_assembly
+    window_size = wildcards.window_size
+    for species in dictionary_of_inds[ref_assembly]:
+            input_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/windowed_pi/{ref_assembly}/{species}/nonpar/{species}_{window_size}.windowed.pi')
+    return input_paths
+
+def check_callable_fracs_files_for_combine_species(wildcards):
+    input_paths = []
+    ref_assembly = wildcards.ref_assembly
+    window_size = wildcards.window_size
+    for species in dictionary_of_inds[ref_assembly]:
+            input_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/callable_fraction/{ref_assembly}/{species}/{window_size}_callable_fraction.csv')
+    return input_paths
+
 dictionary_of_inds = generatedictionary(input_file)
-window_list = [500000]
+
 #window_list = [1000, 5000, 10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
-species_list = ['Pongo_pygmaeus']
-# species_list = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops',
-#                 'Rhinopithecus_roxellana','Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
-#                 'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
-#                 'Pongo_abelii','Cercocebus_atys','Galago_moholi','Nomascus_leucogenys','Colobus_guereza',
-#                 'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
-#                 'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
+window_list = [10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
+#species_list = ['Macaca_mulatta']
+species_list = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops',
+                'Rhinopithecus_roxellana','Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
+                'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
+                'Pongo_abelii','Cercocebus_atys','Galago_moholi','Nomascus_leucogenys','Colobus_guereza',
+                'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
+                'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
 #Missing g.vcf.gz species: Theropithecus_gelada
 #Missing chainfiles: Carlito_syrichta Propithecus_coquereli'
 pd_list= generate_list_of_pds(species_list)
 
 rule all:
     input:
-        expand(generate_output_paths(species_list, window_list=window_list))
+        #expand(generate_output_paths(species_list, window_list=window_list, command='callable_fraction')),
+        expand(generate_output_paths(species_list, window_list=window_list, command='pi'))
 
 
-rule summarise_callable_fraction:
+# rule summarise_callable_fraction:
+#     input:
+#         expand(generate_input_paths(species_list,window_list)) #checks wheter all files exist not just the specific window_size it will generate the output for in each iteration
+#     output:
+#         output='/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/callable_fraction/{ref_assembly}/{species}/{window_size}_callable_fraction.csv'
+#     params:
+#         ref_assembly='{ref_assembly}',
+#         species='{species}',
+#         window_size='{window_size}'
+#     resources:
+#         mem_mb=10000,
+#         runtime=30
+#     conda:
+#         'envs/pandas.yaml'
+#     shell:
+#         '''
+#         python /home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/summarise_species/summarise_species_callable_fraction.py {params.ref_assembly} {params.species} {params.window_size} {output}
+#         ''' 
+
+
+rule combine_species:
     input:
-        expand(generate_input_paths(species_list,window_list)) #checks wheter all files exist not just the specific window_size it will generate the output for in each iteration
+        check_pi_files_for_combine_species,
+        check_callable_fracs_files_for_combine_species
     output:
-        output='/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/callable_fraction/{ref_assembly}/{species}/{window_size}_callable_fraction.csv'
+        output='/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/combined/{ref_assembly}/{ref_assembly}_{window_size}_combined.csv'
     params:
         ref_assembly='{ref_assembly}',
-        species='{species}',
         window_size='{window_size}'
     conda:
         'envs/pandas.yaml'
+    resources:
+        mem_mb=10000,
+        runtime=30
     shell:
         '''
-        python /home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/summarise_species/summarise_species_callable_fraction.py {params.ref_assembly} {params.species} {params.window_size} {output}
-        ''' 
-
-
-# rule combine_species:
-#     input:
-#         callable_fraction = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/callable_fraction/{ref_assembly}/{species}/{window_size}_callable_fraction.csv',
-#         pi_estimation = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/windowed_pi/{ref_assembly}/{species}/nonpar/{species}_{window_size}.windowed.pi'
-#     output:
-#         output='/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/combined/{ref_assembly}/{species}/{species}_{window_size}_combined.csv'
-#     conda:
-#         '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/summarise_species/envs/pandas.yaml'
-#     script:
-#         #some script
-# # this rule should combine the species sepcifik pi estimation and the callabla fraction for each species
+        python /home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/summarise_species/summarise_pi_n_frac.py {params.ref_assembly} {params.window_size} {output}
+        '''
+    
