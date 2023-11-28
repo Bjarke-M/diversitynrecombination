@@ -52,6 +52,14 @@ def gather_callable_frac_files(ref_assembly,window_size, dictionary_of_species):
             'this is not working'
     return dictionary_of_files
 
+def gather_recombination_files(ref_assembly,window_size, dictionary_of_species): # This function generates a dictionary of files
+    dictionary_of_files = {}
+    for species in dictionary_of_species[ref_assembly]:
+        if species not in dictionary_of_files:
+            dictionary_of_files[species] = f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/recombinationrates/{ref_assembly}/{species}/nonpar/{species}_{window_size}_recomb.bed'
+        else:
+            'this is not working'
+    return dictionary_of_files
 
 
 def write_to_file(df, output_file): # This function writes the dataframe to a file
@@ -61,10 +69,12 @@ def write_to_file(df, output_file): # This function writes the dataframe to a fi
 
 
 def wrapper(ref_assembly, window_size, dictionary_of_species): 
-    pi_files = load_in_datasets(gather_pi_files(ref_assembly, window_size, dictionary_of_species))
+    recombinationrates_files = load_in_datasets(gather_recombination_files(ref_assembly, window_size, dictionary_of_species))
     callable_frac_files = load_in_datasets(gather_callable_frac_files(ref_assembly, window_size, dictionary_of_species))
+    frac_n_recombination = pd.merge(callable_frac_files, recombinationrates_files, on=['chr', 'start', 'end', 'species'])
+    pi_files = load_in_datasets(gather_pi_files(ref_assembly, window_size, dictionary_of_species))
     pi_files = pi_files.rename(columns={'CHROM': 'chr', 'BIN_START': 'start', 'BIN_END': 'end'})
-    merged = pd.merge(callable_frac_files, pi_files, on=['chr', 'start', 'end', 'species'])
+    merged = pd.merge(frac_n_recombination, pi_files, on=['chr', 'start', 'end', 'species'])
     return merged
 
 ## LOAD IN DATA
