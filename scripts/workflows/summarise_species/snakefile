@@ -71,7 +71,8 @@ def check_callable_fracs_files_for_combine_species(wildcards):
 dictionary_of_inds = generatedictionary(input_file)
 
 #window_list = [1000, 5000, 10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
-window_list = [10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
+#window_list = [10000, 50000, 100000, 500000, 1000000, 2000000, 10000000]
+window_list = [100000]
 # species_list = ['Macaca_mulatta']
 species_list = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops',
                 'Rhinopithecus_roxellana','Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
