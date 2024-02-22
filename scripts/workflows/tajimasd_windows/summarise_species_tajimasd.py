@@ -30,7 +30,7 @@ def gather_files(ref_assembly, species, window_size, dictionary_of_pds): # This 
     for pd in dictionary_of_pds[ref_assembly][species]:
         if pd not in dictionary_of_files:
             dictionary_of_files[pd] = f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/tajimasd/mask/{ref_assembly}/{species}/{pd}/nonpar/csv/{pd}_masked_{window_size}.csv'
-        else: 
+        else:
             'this is not working'
     return dictionary_of_files
 

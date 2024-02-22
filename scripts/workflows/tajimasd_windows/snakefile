@@ -1,0 +1,299 @@
+#Snakefile for calculating proportions of snps per window for each species
+
+################################################## Function Bonanza ##################################################
+def generatedictionary(input): #make a dictionary of species and pdgp_ids, to iterate over
+    dictionary_of_species_n_pdid = {}
+    with open(input_file, 'r') as file:
+        header = next(file)  # Read and skip the header line
+        for line in file:
+            fields = line.strip().split(',')
+            pdgp_id, genus, species, froh, sex, ref_assembly = fields
+            if not ref_assembly:  # Check if ref_assembly is empty
+                ref_assembly = 'unknown'
+            # Add the pdgp_id to the appropriate category in the dictionary
+            if ref_assembly not in dictionary_of_species_n_pdid:
+                dictionary_of_species_n_pdid[ref_assembly] = {species: [pdgp_id]}
+            elif species not in dictionary_of_species_n_pdid[ref_assembly]:
+                dictionary_of_species_n_pdid[ref_assembly][species] = [pdgp_id]
+            else:
+                dictionary_of_species_n_pdid[ref_assembly][species].append(pdgp_id)
+    return dictionary_of_species_n_pdid 
+
+def get_sex(pd_id): #get sex for each individual, for the coverage caller
+    return dictionary_of_sex[pd_id]
+
+def sex_dictionary(input_file): #make a dictionary
+    dictionary_of_sex = {}
+    with open(input_file, 'r') as file:
+        header = next(file)  # Read and skip the header line
+        for line in file:
+            fields = line.strip().split(',')
+            pdgp_id, genus, species, froh, sex, ref_assembly = fields
+            # Add the pdgp_id to the appropriate category in the dictionary
+            if pdgp_id not in dictionary_of_sex:
+                dictionary_of_sex[str(pdgp_id)] = str(sex)
+    return dictionary_of_sex
+
+def generate_list_of_pds(species_list): #make a list of all pdgp_ids
+    pd_list = {}
+    for ref_assembly in species_list:
+        for species in dictionary_of_inds[ref_assembly]:
+            for pd in dictionary_of_inds[ref_assembly][species]:
+                if ref_assembly not in pd_list:
+                    pd_list[ref_assembly] = [pd]
+                else:
+                    pd_list[ref_assembly].append(pd)
+    return pd_list
+
+
+def generate_input_paths(species_list, window_list): #generate input paths for callable fraction
+    input_paths = []
+    for ref_assembly in species_list:
+        for species in dictionary_of_inds[ref_assembly]:
+            for pd in dictionary_of_inds[ref_assembly][species]:
+                for window_size in window_list:
+                    input_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/tajimasd/mask/{ref_assembly}/{species}/{pd}/nonpar/csv/{pd}_masked_{window_size}.csv')
+    return input_paths
+
+def check_tajimas_d_files_exist(wildcards): # check if tajimasd files exist
+    input_paths = []
+    ref_assembly = wildcards.ref_assembly
+    window_size = wildcards.window_size
+    for species in dictionary_of_inds[ref_assembly]:
+            input_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/tajimasd/{ref_assembly}/{species}/nonpar/{species}_{window_size}.Tajima.D')
+    return input_paths
+
+def check_recombination_files_exist(wildcards): #check if recombination files exist
+    input_paths = []
+    ref_assembly = wildcards.ref_assembly
+    window_size = wildcards.window_size
+    for species in dictionary_of_inds[ref_assembly]:
+            input_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/tajimasd/recombinationrates/{ref_assembly}/{species}/nonpar/{species}_{window_size}_recomb.bed')
+    return input_paths
+
+def check_callable_fracs_files_for_combine_species(wildcards): #check if callable fraction files exist
+    input_paths = []
+    ref_assembly = wildcards.ref_assembly
+    window_size = wildcards.window_size
+    for species in dictionary_of_inds[ref_assembly]: 
+            input_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/tajimasd/callable_fraction/{ref_assembly}/{species}/{window_size}_callable_fraction.csv')
+    return input_paths
+
+def get_output_paths(dictionary_of_species_n_pdid, window_list, command): # get output paths for all rules
+    out_paths = []
+    for ref_assembly in dictionary_of_species_n_pdid:
+        if ref_assembly != 'unknown' and ref_assembly in ref_list:
+            for species in dictionary_of_species_n_pdid[ref_assembly]:
+                if command=='tajimasd':
+                    for window_size in window_list:
+                        out_paths.append(f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/tajimasd/{ref_assembly}/{species}/nonpar/{species}_{window_size}.Tajima.D")
+                elif command=='windowtajimasd':
+                    for window_size in window_list:
+                        out_paths.append(f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/tajimasd/window_bed/{ref_assembly}/{species}/nonpar/{species}_{window_size}.bed")
+                elif command=='intersect':
+                    for window_size in window_list:
+                        for pdgp_id in dictionary_of_species_n_pdid[ref_assembly][species]:
+                            out_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/tajimasd/mask/{ref_assembly}/{species}/{pdgp_id}/nonpar/txt/{pdgp_id}_coverage_{window_size}.txt')
+                elif command=='mask':
+                    for window_size in window_list:
+                        for pdgp_id in dictionary_of_species_n_pdid[ref_assembly][species]:
+                            out_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/tajimasd/mask/{ref_assembly}/{species}/{pdgp_id}/nonpar/csv/{pdgp_id}_masked_{window_size}.csv') 
+                elif command=='callable_fraction':
+                    for window_size in window_list:
+                        out_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/tajimasd/callable_fraction/{ref_assembly}/{species}/{window_size}_callable_fraction.csv')
+                elif command=='tajimasd_combined':
+                    for window_size in window_list:
+                        out_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/tajimasd/combined/{ref_assembly}/{ref_assembly}_{window_size}_combined.csv')
+                elif command=='recombinationrates':
+                    for window_size in window_list:
+                        out_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/tajimasd/recombinationrates/{ref_assembly}/{species}/nonpar/{species}_{window_size}_recomb.bed')
+
+    return out_paths
+
+
+
+
+
+
+
+############################################### LOAD DICTIONARY AND WINDOWLIST AND REFS ###################################################
+
+ref_list = ['Daubentonia_madagascariensis','Saguinus_midas','Chlorocebus_aethiops','Rhinopithecus_roxellana',
+                'Mandrillus_sphinx','Macaca_mulatta','Loris_tardigradus','Callithrix_jacchus',
+                'Pithecia_pithecia','Lemur_catta-Thomas','Gorilla_gorilla_gorilla','Aotus_nancymaae','Sapajus_apella',
+                'Pongo_abelii','Cercocebus_atys','Galago_moholi','Nomascus_leucogenys','Colobus_guereza',
+                'Cebus_albifrons','Cercopithecus_mitis','Pongo_pygmaeus','Pan_troglodytes','Erythrocebus_patas',
+                'Microcebus_murinus','Atele_fusciceps','Otolemur_garnettii','Nycticebus_pygmaeus']
+# ref_list = ['Daubentonia_madagascariensis','Gorilla_gorilla_gorilla','Pongo_abelii','Macaca_mulatta']
+
+
+#Missing g.vcf.gz species: Theropithecus_gelada
+#Missing chainfiles: Carlito_syrichta Propithecus_coquereli'
+
+input_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/PDGP_metadata.txt'
+dictionary_of_sex = sex_dictionary(input_file) #get sex dictionary
+list_of_windows = [100000] #choose the window ssize for the pipge line 
+dictionary_of_inds=generatedictionary(input_file) # get the individuals 
+pd_list= generate_list_of_pds(ref_list) #get the pdgp_ids
+
+
+rule all:
+    input:
+        expand(get_output_paths(dictionary_of_inds, list_of_windows, 'tajimasd'), ref_assembly=ref_list),
+        expand(get_output_paths(dictionary_of_inds, list_of_windows, 'windowtajimasd'), ref_assembly=ref_list),
+        expand(get_output_paths(dictionary_of_inds, list_of_windows, 'intersect'), ref_assembly=ref_list),
+        expand(get_output_paths(dictionary_of_inds, list_of_windows, 'mask'), ref_assembly=ref_list),
+        expand(get_output_paths(dictionary_of_inds, list_of_windows, 'callable_fraction'), ref_assembly=ref_list),
+        expand(get_output_paths(dictionary_of_inds, list_of_windows, 'tajimasd_combined'), ref_assembly=ref_list),
+        expand(get_output_paths(dictionary_of_inds, list_of_windows, 'recombinationrates'), ref_assembly=ref_list)
+
+##################################################### Calculate Tajima's D #####################################################
+
+rule tajimasd_for_each_species:
+    input:
+        nonpar = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/merged_non_male_X/{species}.bcf.gz",
+    output:
+        snpden = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/tajimasd/{ref_assembly}/{species}/nonpar/{species}_{window_size}.Tajima.D",
+    params:
+        window = "{window_size}",
+        prefix = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/tajimasd/{ref_assembly}/{species}/nonpar/{species}_{window_size}",
+    conda:
+        'envs/vcftools.yaml'
+    resources:
+        mem_mb=8000, #memory in megabytes
+        runtime=60 #runtime in minutes
+    shell:
+        """
+        vcftools --bcf {input.nonpar} --TajimaD {params.window} --out {params.prefix}
+        """
+
+##################################################### Make window bed file #####################################################
+
+rule make_window_file:
+    input:
+        snpden = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/tajimasd/{ref_assembly}/{species}/nonpar/{species}_{window_size}.Tajima.D",
+    output:
+        window_bed = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/tajimasd/window_bed/{ref_assembly}/{species}/nonpar/{species}_{window_size}.bed",
+    params:
+        window = "{window_size}"
+    resources:
+        mem_mb=8000, #memory in megabytes
+        runtime=60 #runtime in minutes
+    shell:
+        """
+        #get the start end and chr and make bed file maybe
+        awk 'NR > 1 {{print $1 "\t" $2 "\t" $2+{params.window}}}' {input.snpden} > {output.window_bed}
+        """
+
+##################################################### Masking regions based on callability #####################################################    
+
+## intersect callable and liftable parts ##
+rule intersect_windows:
+    input:
+        window_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/tajimasd/window_bed/{ref_assembly}/{species}/nonpar/{species}_{window_size}.bed',        
+        callable_vcf = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{pd_id}/{pd_id}_lifted_sorted.bed'
+    output:
+        outfile = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/tajimasd/mask/{ref_assembly}/{species}/{pd_id}/nonpar/txt/{pd_id}_coverage_{window_size}.txt'
+    conda:
+        'envs/bedtools.yaml'
+    resources:
+        mem_mb=64000,
+        runtime=30
+    shell:
+        '''
+        bedtools intersect -a {input.window_file} -b {input.callable_vcf} -wo > {output.outfile}
+        '''
+
+# calculate coverage per individual ##
+rule maskfile:
+    input:
+        coverage_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/tajimasd/mask/{ref_assembly}/{species}/{pd_id}/nonpar/txt/{pd_id}_coverage_{window_size}.txt'
+    output:
+        masked_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/tajimasd/mask/{ref_assembly}/{species}/{pd_id}/nonpar/csv/{pd_id}_masked_{window_size}.csv'
+    params:
+        window_size = "{window_size}",
+        pd_id = "{pd_id}",
+        sex = lambda wildcards: get_sex(wildcards.pd_id) #NA for coverrage if sex = male and chr = X as we dont want to make the mistake of including the male x coverage when we summarise for species
+    conda:
+        'envs/rtidy.yaml'
+    resources:
+        mem_mb=64000,
+        runtime=30
+    script: '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/calculate_win_based_coverage/maskfile.R'
+
+##################################################### Estimate recombination rates in each window #####################################################
+
+rule parse_recomb_to_window:
+    input:
+        recombination_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/Recombination_map_decode_2019',
+        window_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/tajimasd/window_bed/{ref_assembly}/{species}/nonpar/{species}_{window_size}.bed'
+    output:
+        file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/tajimasd/recombinationrates/{ref_assembly}/{species}/nonpar/{species}_{window_size}_recomb.bed'
+    conda:
+        'envs/pandas.yaml'
+    resources:
+        mem_mb = 4000,
+        runtime = 300
+    shell:
+        '''
+        python /home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/recombinationrate/recombinationrate_parser.py \
+        {input.window_file} {input.recombination_file} {output.file}
+        '''
+
+
+
+##################################################### Summaraize species #####################################################
+rule summarise_callable_fraction:
+    input:
+        expand(generate_input_paths(ref_list,list_of_windows)) #checks wheter all files exist not just the specific window_size it will generate the output for in each iteration
+    output:
+        output='/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/tajimasd/callable_fraction/{ref_assembly}/{species}/{window_size}_callable_fraction.csv'
+    params:
+        ref_assembly='{ref_assembly}',
+        species='{species}',
+        window_size='{window_size}'
+    resources:
+        mem_mb=10000,
+        runtime=30
+    conda:
+        'envs/pandas.yaml'
+    shell:
+        '''
+        python summarise_species_tajimasd.py {params.ref_assembly} {params.species} {params.window_size} {output}
+        ''' 
+
+rule combine_species:
+    input:
+        check_recombination_files_exist,
+        check_tajimas_d_files_exist,
+        check_callable_fracs_files_for_combine_species
+    output:
+        output='/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/tajimasd/combined/{ref_assembly}/{ref_assembly}_{window_size}_combined.csv'
+    params:
+        ref_assembly='{ref_assembly}',
+        window_size='{window_size}'
+    conda:
+        'envs/pandas.yaml'
+    resources:
+        mem_mb=10000,
+        runtime=30
+    shell:
+        '''
+        python summarise_tajimasd_n_frac.py {params.ref_assembly} {params.window_size} {output}
+        '''
+
+####################################################### PLOT TAJIMAS D HISTOGRAM #######################################################
+# rule plot_tajimasd:
+#     input:
+#         tajimasd = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/tajimasd/combined/{ref_assembly}/{ref_assembly}_{window_size}_combined.csv'
+#     output:
+#         plot = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/tajimasd/combined/{ref_assembly}/{ref_assembly}_{window_size}_combined.png'
+#     conda:
+#         'envs/pandas.yaml'
+#     resources:
+#         mem_mb=10000,
+#         runtime=30
+#     shell:
+#         '''
+#         python plot_tajimasd.py {input.tajimasd} {output.plot}
+#         '''

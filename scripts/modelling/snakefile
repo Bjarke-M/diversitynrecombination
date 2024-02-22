@@ -18,10 +18,8 @@ rule model:
         trace_file = '../../results/model/Nested_model/{model}/{model}_{date}.nc',
         date = '{date}'
     resources:
-        mem_mb = 16000,
+        mem_mb = 10000,
         runtime = 720
-    conda:
-        'envs/pymc.yaml'
     shell:
         '''
         python models.py {params.model} {params.trace_file} {params.date}

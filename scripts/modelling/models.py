@@ -189,8 +189,9 @@ if sys.argv[1] == 'hierarchical_log_scaled_ne_cmpermb_model':
         # Sample posterior
         with hierarchical_log_scaled_ne_cmpermb_model:
             hierarchical_log_scaled_ne_cmpermb_model_idata = pm.sample(2000, tune=2000, target_accept=0.99, return_inferencedata=True,
-                                                                       progressbar=True, cores=20, chains=4)
+                                                                       progressbar=True, cores=25, chains=4)
         ### Save the trace and posterior
+        az.to_netcdf(hierarchical_log_scaled_ne_cmpermb_model_idata, '../../results/model/Nested_model/hierarchical_log_scaled_ne_cmpermb_model/test_hierarchical_log_scaled_ne_cmpermb_model_18_12_2023.nc')
         az.to_netcdf(hierarchical_log_scaled_ne_cmpermb_model_idata, trace_file)
         # g0 = hierarchical_log_scaled_ne_cmpermb_model_idata.posterior.g0.to_dataframe()
         # g0.to_csv("../../results/model/Nested_model/hierarchical_log_scaled_ne_cmpermb_model/g0_{date}", sep="\t")
