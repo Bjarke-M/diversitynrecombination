@@ -1,7 +1,7 @@
 ### This is a snakemake file for the nested model
-List_of_models = ['hierarchical_log_scaled_ne_cmpermb_model']
-#modelnames 'hierarchical_model' , 'basic_model'
-date = ['18_12_2023']
+List_of_models = ['group_specific_priors_hierarchical_log_scaled_ne_cmpermb_model']
+#modelnames 'hierarchical_model' , 'basic_model',group_specific_priors_hierarchical_log_scaled_ne_cmpermb_model,hierarchical_log_scaled_ne_cmpermb_model
+date = ['27_02_2024']
 ##snakemake --cluster "sbatch -A primatediversity -t 24:00:00 -N 1 --mem 16g --cpus-per-task 8" -j 3 
 rule all:
     input:
@@ -17,9 +17,6 @@ rule model:
         model = '{model}',
         trace_file = '../../results/model/Nested_model/{model}/{model}_{date}.nc',
         date = '{date}'
-    resources:
-        mem_mb = 10000,
-        runtime = 720
     shell:
         '''
         python models.py {params.model} {params.trace_file} {params.date}

@@ -110,7 +110,11 @@ def get_output_paths(dictionary_of_species_n_pdid, window_list, command): # get 
 
     return out_paths
 
-
+def check_all_files_exits(list_of_species): #check if all files exist
+    input_paths = []
+    for ref_assembly in list_of_species:
+        input_paths.append(f'/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/tajimasd/combined/{ref_assembly}/{ref_assembly}_100000_combined.csv')
+    return input_paths
 
 
 
@@ -145,7 +149,8 @@ rule all:
         expand(get_output_paths(dictionary_of_inds, list_of_windows, 'mask'), ref_assembly=ref_list),
         expand(get_output_paths(dictionary_of_inds, list_of_windows, 'callable_fraction'), ref_assembly=ref_list),
         expand(get_output_paths(dictionary_of_inds, list_of_windows, 'tajimasd_combined'), ref_assembly=ref_list),
-        expand(get_output_paths(dictionary_of_inds, list_of_windows, 'recombinationrates'), ref_assembly=ref_list)
+        expand(get_output_paths(dictionary_of_inds, list_of_windows, 'recombinationrates'), ref_assembly=ref_list),
+        '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/tajimasd/combined_all/all_species_combined.csv'
 
 ##################################################### Calculate Tajima's D #####################################################
 
@@ -280,6 +285,23 @@ rule combine_species:
     shell:
         '''
         python summarise_tajimasd_n_frac.py {params.ref_assembly} {params.window_size} {output}
+        '''
+
+list_of_inputs_to_combine = check_all_files_exits(ref_list)
+
+rule combine_all_species:
+    input:
+        list_of_inputs_to_combine
+    output:
+        output='/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/tajimasd/combined_all/all_species_combined.csv'
+    conda:
+        'envs/pandas.yaml'
+    resources:
+        mem_mb=10000,
+        runtime=30
+    shell:
+        '''
+        python combine_all_species.py {output}
         '''
 
 ####################################################### PLOT TAJIMAS D HISTOGRAM #######################################################

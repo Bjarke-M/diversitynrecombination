@@ -47,7 +47,7 @@ def generate_input_paths(species_list, lifted_bed:int):
     for species in species_list:
         if lifted_bed==0:
             input_paths.extend([
-                f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/Baboons/{pdgp_id}/{pdgp_id}_concat.vcf.gz"
+                f"/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/Baboons/{pdgp_id}/{pdgp_id}_concat.vcf.gz.csi"
                 for pdgp_id in dictionary_of_inds[species]
             ])
     return input_paths
@@ -64,32 +64,48 @@ rule all:
         expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/vcfs/{species}_lifted.vcf", species=species_list),
         expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/vcfs/{species}_lifted.vcf.unmap", species=species_list),
         expand('/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/Baboons/{species}/{species}ConcatGtVar.g.vcf.gz', species=species_list),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted.bcf.gz", species=species_list),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted_unmap.bcf.gz", species=species_list),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted.bcf.gz.csi", species=species_list),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted_unmap.bcf.gz.csi", species=species_list),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pd_id}/{pd_id}.bed", species=species_list, pd_id=pd_id_list),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pd_id}/{pd_id}_modcov.txt", species=species_list, pd_id=pd_id_list),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pd_id}/{pd_id}_bed_lifted.bed", species=species_list, pd_id=pd_id_list),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pd_id}/{pd_id}_bed_lifted.bed.unmap", species=species_list, pd_id=pd_id_list),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pd_id}/{pd_id}_lifted_sorted.bed", species=species_list, pd_id=pd_id_list),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/original/{species}_only.bcf.gz",ref_assembly=species_list, species=species_per_ref_assembly),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/{species}_isolation.txt",ref_assembly=species_list, species=species_per_ref_assembly),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/original/{species}_only.bcf.gz.csi",ref_assembly=species_list, species=species_per_ref_assembly),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/{species}_nonpar.bcf.gz", ref_assembly=species_list, species=species_per_ref_assembly),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/par/{species}_par.bcf.gz", ref_assembly=species_list, species=species_per_ref_assembly),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/males_no_x/male_{species}_isolation.txt", ref_assembly=species_list, species=species_per_ref_assembly),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/females/{species}.bcf.gz",ref_assembly=species_list, species=species_per_ref_assembly),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/males_no_x/{species}.bcf.gz",ref_assembly=species_list, species=species_per_ref_assembly),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/merged_non_male_X/{species}.bcf.gz",ref_assembly=species_list, species=species_per_ref_assembly),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/windowed_pi/{ref_assembly}/{species}/nonpar/{species}_{window_size}.windowed.pi",ref_assembly=species_list, species=species_per_ref_assembly, window_size=list_of_windows),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/windowed_pi/{ref_assembly}/{species}/par/{species}_{window_size}_par.windowed.pi",ref_assembly=species_list, species=species_per_ref_assembly, window_size=list_of_windows),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/nonpar/{species}_{window_size}.bed",ref_assembly=species_list, species=species_per_ref_assembly, window_size=list_of_windows),
-        expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/par/{species}_{window_size}_par.bed",ref_assembly=species_list, species=species_per_ref_assembly, window_size=list_of_windows),
+        # expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted.bcf.gz", species=species_list),
+        # expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted_unmap.bcf.gz", species=species_list),
+        # expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted.bcf.gz.csi", species=species_list),
+        # expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/bcfs/{species}_lifted_unmap.bcf.gz.csi", species=species_list),
+        # expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pd_id}/{pd_id}.bed", species=species_list, pd_id=pd_id_list),
+        # expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pd_id}/{pd_id}_modcov.txt", species=species_list, pd_id=pd_id_list),
+        # expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pd_id}/{pd_id}_bed_lifted.bed", species=species_list, pd_id=pd_id_list),
+        # expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pd_id}/{pd_id}_bed_lifted.bed.unmap", species=species_list, pd_id=pd_id_list),
+        # expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{species}/{pd_id}/{pd_id}_lifted_sorted.bed", species=species_list, pd_id=pd_id_list),
+        # expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/original/{species}_only.bcf.gz",ref_assembly=species_list, species=species_per_ref_assembly),
+        # expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/{species}_isolation.txt",ref_assembly=species_list, species=species_per_ref_assembly),
+        # expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/original/{species}_only.bcf.gz.csi",ref_assembly=species_list, species=species_per_ref_assembly),
+        # expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/{species}_nonpar.bcf.gz", ref_assembly=species_list, species=species_per_ref_assembly),
+        # expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/par/{species}_par.bcf.gz", ref_assembly=species_list, species=species_per_ref_assembly),
+        # expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/males_no_x/male_{species}_isolation.txt", ref_assembly=species_list, species=species_per_ref_assembly),
+        # expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/females/{species}.bcf.gz",ref_assembly=species_list, species=species_per_ref_assembly),
+        # expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/males_no_x/{species}.bcf.gz",ref_assembly=species_list, species=species_per_ref_assembly),
+        # expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/species_specific_bcfs/{ref_assembly}/{species}/nonpar/merged_non_male_X/{species}.bcf.gz",ref_assembly=species_list, species=species_per_ref_assembly),
+        # expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/windowed_pi/{ref_assembly}/{species}/nonpar/{species}_{window_size}.windowed.pi",ref_assembly=species_list, species=species_per_ref_assembly, window_size=list_of_windows),
+        # expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/results/windowed_pi/{ref_assembly}/{species}/par/{species}_{window_size}_par.windowed.pi",ref_assembly=species_list, species=species_per_ref_assembly, window_size=list_of_windows),
+        # expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/nonpar/{species}_{window_size}.bed",ref_assembly=species_list, species=species_per_ref_assembly, window_size=list_of_windows),
+        # expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/par/{species}_{window_size}_par.bed",ref_assembly=species_list, species=species_per_ref_assembly, window_size=list_of_windows),
 
 
 
 ######################################### CONCATINATE THE VCF FILES #########################################
+
+#Define a rule to concatenate the individual VCF files
+rule concat_individuals_csi:
+    resources:
+        mem_mb= 8000,
+        runtime= 120
+    input:
+        file_list = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/Baboons/{pd_id}/{pd_id}_concat.vcf.gz"
+    output:
+        concat_output_csi = "/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/Baboons/{pd_id}/{pd_id}_concat.vcf.gz.csi"
+    conda:
+        'envs/bcftools.yaml'
+    shell:
+        """
+        bcftools index -f {input.file_list} -o {output.concat_output_csi}
+        """
 
 # Define a rule to concatenate the individual VCF files
 rule concat_individuals:
@@ -104,14 +120,15 @@ rule concat_individuals:
         'envs/bcftools.yaml'
     shell:
         """
-        bcftools concat -O z -n -f {input.file_list} -o {output.concat_output}
+        bcftools concat -Oz -f {input.file_list} -o {output.concat_output}
         bcftools index -f {output.concat_output}
         """
 # Define a rule to concatenate the reference assembly VCF files
 rule merge_ref_assembly:
     resources:
-        mem_mb= 12000,
-        runtime= 10000
+        mem_mb= 64000,
+        runtime= 10080,
+    threads: 2
     input:
         files = expand("/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/Baboons/{pd_id}/{pd_id}_concat.vcf.gz", pd_id=pd_id_list),
         file_list = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/Baboons/all_inds_papio_files.txt'
@@ -125,12 +142,12 @@ rule merge_ref_assembly:
         bcftools index -f {output.concat_output}
         """
 
-######################################### LIFTOVER THE VCF FILES #################################################
-# Define a rule to liftover the concatenated VCF files
+# ######################################### LIFTOVER THE VCF FILES #################################################
+# # Define a rule to liftover the concatenated VCF files
 rule liftover_generate_vcf:
     resources:
         mem_mb= 16000,
-        runtime= 180
+        runtime= 900
     input:
         chain_file="/home/bjarkemp/primatediversity/data/chain_files_15_03_2022/{species}_To_hg38.liftOver.gz",
         input_vcf='/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/Baboons/{species}/{species}ConcatGtVar.g.vcf.gz',
@@ -141,14 +158,14 @@ rule liftover_generate_vcf:
     shell:
         """
         # Run CrossMap.py to perform liftover and generate VCF files
-        CrossMap.py vcf --chromid l --no-comp-alleles {input.chain_file} {input.input_vcf} {input.reference_fasta} {output.vcf} 2> {log}
+        CrossMap.py vcf --chromid l --no-comp-alleles {input.chain_file} {input.input_vcf} {input.reference_fasta} {output.vcf}
         """
 
 
 rule gzip_vcfs_sort:
     resources:
-        mem_mb= 8000,
-        runtime= 60
+        mem_mb= 4000,
+        runtime= 1500
     input:
         vcf="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/vcfs/{species}_lifted.vcf",
         unmapvcf="/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{species}/vcfs/{species}_lifted.vcf.unmap"
@@ -208,7 +225,7 @@ rule generate_ind_beds:
             bedtools merge > {output.output_file}
         """
 
-#lift bed files to the human reference genome
+# #lift bed files to the human reference genome
 rule liftover_generate_bed:
     resources:
         mem_mb= 8000,
@@ -243,7 +260,7 @@ rule sort_lifted:
 rule species_specific_bcfs: #creates species specific bcfs, by extracting the species in the multi species bcf
     resources:
         mem_mb= 16000,
-        runtime= 120
+        runtime= 600
     input:
         bcfs = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/liftover/{ref_assembly}/bcfs/{ref_assembly}_lifted.bcf.gz'
     output:
@@ -260,7 +277,7 @@ rule species_specific_bcfs: #creates species specific bcfs, by extracting the sp
         python3.10 /home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/species_specific_bcfs/isolation_file.py {params.ref} {params.speciesname} {output.isolation_file}
         bcftools view -S {output.isolation_file} {input.bcfs} -O b -o {output.species_specific}
         bcftools index {output.species_specific}
-        """
+         """
 
 rule bcf_without_par:  #removes the PAR region from the species specific bcfs 
     resources:
@@ -351,7 +368,7 @@ rule merge_sexes: #merge the females with the males without the X chr into one f
         bcftools index {output.merged}
         """
 
-################################################## ESTIMATE PI ########################################################
+# ################################################## ESTIMATE PI ########################################################
 
 rule windowed_pi_for_each_species:
     resources:
@@ -395,7 +412,7 @@ rule make_window_file:
         awk 'NR > 1 {{print $1 "\t" $2 "\t" $3}}' {input.window_par} > {output.window_bed_par}
         """
 
-################################################## Calculate windowbased coverage ########################################################
+# ################################################## Calculate windowbased coverage ########################################################
 # rule intersect_windows:
 #     input:
 #         window_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/window_bed/{ref_assembly}/{species}/nonpar/{species}_{window_size}.bed',        
@@ -412,7 +429,7 @@ rule make_window_file:
 #         bedtools intersect -a {input.window_file} -b {input.callable_vcf} -wo > {output.outfile}
 #         '''
 
-# ## calculate coverage per individual ##
+# # ## calculate coverage per individual ##
 # rule maskfile:
 #     input:
 #         coverage_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/mask/{ref_assembly}/{species}/{pd_id}/nonpar/txt/{pd_id}_coverage_{window_size}.txt'
@@ -429,8 +446,8 @@ rule make_window_file:
 #         runtime=30
 #     script: '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/scripts/workflows/calculate_win_based_coverage/maskfile.R'
 
-#################### CALCULATE WIND BASED RECOMBINATION RATE #############################
-# a rule that produces species specific intersect between the recombination rate and the window bed file
+# # #################### CALCULATE WIND BASED RECOMBINATION RATE #############################
+# # # a rule that produces species specific intersect between the recombination rate and the window bed file
 # rule parse_recomb_to_window:
 #     input:
 #         recombination_file = '/home/bjarkemp/primatediversity/people/bjarkemp/diversitynrecombination/data/Recombination_map_decode_2019',
@@ -448,7 +465,7 @@ rule make_window_file:
 #         {input.window_file} {input.recombination_file} {output.file}
 #         '''
 
-############################################# SUMMARISE SPECIES ########################################################
+# ############################################# SUMMARISE SPECIES ########################################################
 
 
 # rule combine_species:
