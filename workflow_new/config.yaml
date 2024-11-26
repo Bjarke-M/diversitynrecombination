@@ -1,0 +1,22 @@
+reference_genomes:
+  - Papio_Anubis
+  - Gorilla_Gorilla
+  - Pan_Troglodytes
+
+genome_species_map:
+  Papio_Anubis:
+    Somebaboon:
+      - pdid1
+      - pdid3
+    someother_baboon:
+      - pdid4
+      - pdid5
+    lastbaboon:
+      - pdid6
+  Other_ref:
+    Species:
+      - PDID
+      - PDID
+  
+
+output_dir: "results/"

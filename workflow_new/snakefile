@@ -1,0 +1,33 @@
+filter vcf -> liftover -> species_specific vcfs -> windows -> callability -> pymc model 
+                                                                            -> figures
+                                                                        
+
+import yaml
+
+# Load the configuration file
+configfile: "config.yaml"
+
+# Access configuration values
+reference_genomes = config["reference_genomes"]
+genome_species_map = config["genome_species_map"]
+output_dir = config["output_dir"]
+
+# Create a function to retrieve all genome-species-sample combinations
+def get_combinations():
+    combinations = []
+    for genome in reference_genomes:
+        species_map = genome_species_map[genome]
+        for species, samples in species_map.items():
+            for sample in samples:
+                combinations.append((genome, species, sample))
+    return combinations
+
+combinations = get_combinations()
+
+# Define the pipeline
+rule all:
+    input:
+        expand(f"{output_dir}{{genome}}/{{species}}/{{sample}}/analysis.txt",
+               genome=[c[0] for c in combinations],
+               species=[c[1] for c in combinations],
+               sample=[c[2] for c in combinations])
