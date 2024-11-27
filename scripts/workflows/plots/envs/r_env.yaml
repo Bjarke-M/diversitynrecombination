@@ -1,6 +1,0 @@
-channels:
-  - conda-forge
-  - defaults
-dependencies:
-  - r-tidyverse=2.0.0
-  - r-gridextra=2.3
