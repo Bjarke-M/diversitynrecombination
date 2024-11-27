@@ -3,7 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-
+*.csv
+*.pdf
 figures/figures_for_article/*
 figures/plot_of_poster/*
 figures/plot_for_popgroup/*
