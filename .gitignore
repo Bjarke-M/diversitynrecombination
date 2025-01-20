@@ -145,3 +145,4 @@ snakejob.*
 *.zarr/
 *data/
 results/*
+data1/

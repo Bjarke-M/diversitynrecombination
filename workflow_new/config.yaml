@@ -1,22 +1,38 @@
-reference_genomes:
-  - Papio_Anubis
-  - Gorilla_Gorilla
-  - Pan_Troglodytes
+species:
+  - Macaca_mulatta 
+#  - Papio_Anubis
+#  - Gorilla_Gorilla
+#  - Pan_Troglodytes
+batch:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  - 11
+  - 12
+  - 13
+  - 14
+  - 15
+  - 16
+  - 17
+  - 18
+  - 19
+  - 20
+  - 21
+  - 22
+  - 23
+  - 24
 
-genome_species_map:
-  Papio_Anubis:
-    Somebaboon:
-      - pdid1
-      - pdid3
-    someother_baboon:
-      - pdid4
-      - pdid5
-    lastbaboon:
-      - pdid6
-  Other_ref:
-    Species:
-      - PDID
-      - PDID
-  
 
-output_dir: "results/"
+
+ref:
+  Macaca_mulatta: Macaca_mulatta
+  Macaca_radiata: Macaca_mulatta
+
